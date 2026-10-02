@@ -1,0 +1,558 @@
+<Window x:Class="GameLauncher.MainWindow"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ xmlns:converters="clr-namespace:GameLauncher.Converters"
+ xmlns:controls="clr-namespace:GameLauncher.Controls" xmlns:views="clr-namespace:GameLauncher.Views"
+ Title="GameLauncher" Width="1360" Height="900" MinWidth="1000" MinHeight="650"
+ WindowStartupLocation="CenterScreen" UseLayoutRounding="True" SnapsToDevicePixels="True" Background="{DynamicResource AppBackground}" Foreground="{DynamicResource TextPrimary}" FontFamily="Segoe UI"
+ PreviewKeyDown="Window_PreviewKeyDown" Closing="Window_Closing">
+ <Window.Resources>
+    <ResourceDictionary>
+        <ResourceDictionary.MergedDictionaries><ResourceDictionary Source="Theme.xaml"/></ResourceDictionary.MergedDictionaries>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <converters:PathToImageConverter x:Key="PathToImageConverter"/>
+        <converters:StatusToBrushConverter x:Key="StatusToBrushConverter"/>
+        <converters:InverseBoolToVisibilityConverter x:Key="InverseBoolToVis"/>
+        <converters:ArtworkHeightConverter x:Key="ArtworkHeight"/><converters:CardWidthConverter x:Key="CardWidthConverter"/>
+        <converters:StatusLabelConverter x:Key="StatusLabelConverter"/>
+        <DataTemplate x:Key="GameCardTemplate"><controls:GameCard Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=ItemsControl}, Converter={StaticResource CardWidthConverter}}" Margin="0,0,16,20"/></DataTemplate>
+    </ResourceDictionary>
+ </Window.Resources>
+ <Grid x:Name="ShellGrid" ClipToBounds="True" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
+    <Grid x:Name="ContentShell" Margin="24,18,20,20">
+<Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+<Border Style="{DynamicResource GlassPanel}" Padding="14,4" Margin="0,0,0,20"><DockPanel><TextBlock x:Name="StatusLineText" Text="Bereit" Foreground="{DynamicResource SuccessColor}" FontSize="11" VerticalAlignment="Center" Margin="0,0,12,0"/><TextBlock x:Name="SidebarStatsText" Style="{DynamicResource BodyText}" FontSize="11" VerticalAlignment="Center" Margin="0,0,12,0"/><TextBlock DockPanel.Dock="Right" Text="Strg + K" Style="{DynamicResource Eyebrow}" VerticalAlignment="Center" Margin="16,0,0,0"/><TextBox x:Name="SearchGamesTextBox" Tag="Deine Spiele durchsuchen …" Background="Transparent" BorderThickness="0" TextChanged="SearchGamesTextBox_TextChanged" ToolTip="Bibliothek durchsuchen (Strg+K)"/></DockPanel></Border>
+<Grid Grid.Row="1" x:Name="PageHost">
+<Grid x:Name="HomeView"><views:DashboardView x:Name="HomeDashboard" PlayRequested="FeaturedPlay_Click" SettingsRequested="SettingsNavigationButton_Click" LibraryRequested="LibraryNavigationButton_Click" DiscoverRequested="ImportsButton_Click" QuietChanged="DashboardQuiet_Click"/></Grid>
+            <Grid x:Name="LibraryView" Visibility="Collapsed">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <TextBlock Text="Bibliothek" Style="{DynamicResource PageTitle}" Margin="0,0,0,18"/>
+<StackPanel Grid.Row="1" Margin="0,0,0,12"><TextBox x:Name="LibrarySearchTextBox" Visibility="Collapsed" TextChanged="LibrarySearchTextBox_TextChanged"/>
+<DockPanel>
+    <Button x:Name="LibraryViewToggle" DockPanel.Dock="Right" Click="LibraryViewToggle_Click" Style="{DynamicResource SecondaryButton}" Padding="10" ToolTip="Ansicht wechseln" Width="40" Height="40"><TextBlock x:Name="LibraryViewToggleIcon" Text="&#xE8A9;" FontFamily="Segoe Fluent Icons" FontSize="16"/></Button>
+    <Button x:Name="LibraryFilterToggleButton" DockPanel.Dock="Right" Content="Filter &amp; Sortierung ▾" Click="LibraryFilterToggle_Click" Style="{DynamicResource SecondaryButton}" Padding="14,0" Margin="0,0,8,0"/>
+</DockPanel>
+<Border x:Name="LibraryFilterPanel" Visibility="Collapsed" Background="{DynamicResource SurfaceSecondary}" BorderBrush="{DynamicResource BorderColor}" BorderThickness="1" CornerRadius="16" Padding="16" Margin="0,10,0,0">
+    <StackPanel>
+        <TextBlock Text="Anzeigen" Style="{DynamicResource Eyebrow}" Margin="0,0,0,10"/>
+        <WrapPanel>
+            <Button x:Name="FilterAllButton" Content="Alle" Tag="All" Click="LibraryFilter_Click" Margin="0,0,6,6" Style="{DynamicResource SecondaryButton}" Padding="14,0"/>
+            <Button x:Name="FilterInstalledButton" Content="Installiert" Tag="Installed" Click="LibraryFilter_Click" Margin="0,0,6,6" Style="{DynamicResource SecondaryButton}" Padding="14,0"/>
+            <Button x:Name="FilterUpdatesButton" Content="Updates" Tag="Updates" Click="LibraryFilter_Click" Margin="0,0,6,6" Style="{DynamicResource SecondaryButton}" Padding="14,0"/>
+            <Button x:Name="FilterUnplayedButton" Content="Ungespielt" Tag="Unplayed" Click="LibraryFilter_Click" Margin="0,0,6,6" Style="{DynamicResource SecondaryButton}" Padding="14,0"/>
+            <Button x:Name="FilterFavoritesButton" Content="Favoriten" Tag="Favorites" Click="LibraryFilter_Click" Margin="0,0,6,6" Style="{DynamicResource SecondaryButton}" Padding="14,0"/>
+            <Button x:Name="FilterWaitingButton" Content="Wartend" Tag="Waiting" Click="LibraryFilter_Click" Margin="0,0,6,6" Style="{DynamicResource SecondaryButton}" Padding="14,0"/>
+            <Button x:Name="FilterFinishedButton" Content="Abgeschlossen" Tag="Finished" Click="LibraryFilter_Click" Margin="0,0,6,6" Style="{DynamicResource SecondaryButton}" Padding="14,0"/>
+            <Button x:Name="FilterProblemsButton" Content="Probleme" Tag="Problems" Click="LibraryFilter_Click" Margin="0,0,6,6" Style="{DynamicResource SecondaryButton}" Padding="14,0" ToolTip="Prüft fehlende Spielordner und Startdateien"/>
+        </WrapPanel>
+        <TextBlock Text="Sortieren" Style="{DynamicResource Eyebrow}" Margin="0,8,0,10"/>
+        <WrapPanel>
+            <Button x:Name="SortNameButton" Content="Name" Tag="Name" Click="LibrarySort_Click" Margin="0,0,6,6" Style="{DynamicResource SecondaryButton}" Padding="14,0"/>
+            <Button x:Name="SortRecentButton" Content="Zuletzt gespielt" Tag="Recent" Click="LibrarySort_Click" Margin="0,0,6,6" Style="{DynamicResource SecondaryButton}" Padding="14,0"/>
+            <Button x:Name="SortPlaytimeButton" Content="Spielzeit" Tag="Playtime" Click="LibrarySort_Click" Margin="0,0,6,6" Style="{DynamicResource SecondaryButton}" Padding="14,0"/>
+            <Button x:Name="SortUpdateButton" Content="Updates" Tag="Updates" Click="LibrarySort_Click" Margin="0,0,6,6" Style="{DynamicResource SecondaryButton}" Padding="14,0"/>
+            <Button x:Name="SortAddedButton" Content="Hinzugefügt" Tag="Added" Click="LibrarySort_Click" Margin="0,0,6,6" Style="{DynamicResource SecondaryButton}" Padding="14,0"/>
+        </WrapPanel>
+    </StackPanel>
+</Border>
+<Border x:Name="BulkActionBar" Visibility="Collapsed" Background="{DynamicResource SurfaceSecondary}" BorderBrush="{DynamicResource BorderColor}" BorderThickness="1" CornerRadius="11" Padding="12,6" Margin="0,10,0,0">
+    <DockPanel>
+        <Button Content="Auswahl aufheben" Click="BulkClearSelection_Click" Style="{DynamicResource SecondaryButton}" DockPanel.Dock="Right" Padding="14,0" Margin="8,0,0,0"/>
+        <Button Content="Als Favorit markieren" Click="BulkSetFavorite_Click" Style="{DynamicResource SecondaryButton}" DockPanel.Dock="Right" Padding="14,0" Margin="0,0,8,0"/>
+        <TextBlock x:Name="BulkActionText" VerticalAlignment="Center" Style="{DynamicResource BodyText}"/>
+    </DockPanel>
+</Border>
+</StackPanel>
+<Grid Grid.Row="2">
+                    <ListBox x:Name="LibraryItemsControl" Style="{StaticResource GameList}" ItemTemplate="{StaticResource GameCardTemplate}"><ListBox.ItemsPanel><ItemsPanelTemplate><controls:VirtualizingGamePanel/></ItemsPanelTemplate></ListBox.ItemsPanel></ListBox>
+                    <ListBox x:Name="LibraryListControl" Style="{StaticResource GameList}" Visibility="Collapsed"><ListBox.ItemTemplate><DataTemplate><Border Background="{DynamicResource SurfaceBackground}" BorderBrush="{DynamicResource BorderColor}" BorderThickness="1" CornerRadius="12" Margin="0,0,0,6" Padding="14" Cursor="Hand" MouseLeftButtonDown="GameCard_Click" KeyDown="Card_KeyDown"><DockPanel><Border Width="60" Height="60" CornerRadius="10" ClipToBounds="True" Background="{DynamicResource SurfaceSecondary}" Margin="0,0,14,0"><controls:CroppedImage ImagePath="{Binding CoverPath}" FocusX="{Binding CoverFocusX}" FocusY="{Binding CoverFocusY}" DecodeWidth="120" FitInside="True"/></Border><StackPanel DockPanel.Dock="Right" VerticalAlignment="Center" Margin="14,0,0,0" MinWidth="120"><TextBlock Text="{Binding GameVersion}" Style="{DynamicResource Eyebrow}" Foreground="{DynamicResource TextTertiary}"/><TextBlock Text="{Binding PathWarning}" Style="{DynamicResource BodyText}" Foreground="{DynamicResource DangerColor}" FontSize="11" TextTrimming="CharacterEllipsis" MaxWidth="160"/></StackPanel><StackPanel VerticalAlignment="Center"><TextBlock Text="{Binding Name}" FontSize="15" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/><TextBlock Style="{DynamicResource BodyText}" FontSize="12" Foreground="{DynamicResource TextSecondary}"><Run Text="{Binding Status, Converter={StaticResource StatusLabelConverter}}"/><Run Text=" · "/><Run Text="{Binding InstallSource, Mode=OneWay}"/></TextBlock></StackPanel></DockPanel></Border></DataTemplate></ListBox.ItemTemplate></ListBox>
+                    <StackPanel x:Name="LibraryEmptyState" VerticalAlignment="Center" HorizontalAlignment="Center" Visibility="Collapsed">
+                        <TextBlock Text="Keine passenden Spiele." Style="{DynamicResource SectionTitle}" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Füge ein Spiel hinzu oder ändere die Filter." Style="{DynamicResource BodyText}" Margin="0,8,0,16" HorizontalAlignment="Center"/>
+                        <Button Content="Spiel hinzufügen" Click="OpenAddGameButton_Click" Style="{DynamicResource PrimaryButton}" Width="140" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Grid>
+            </Grid>
+
+            <Grid x:Name="AvailableUpdatesView" Visibility="Collapsed">
+                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                <DockPanel Margin="0,0,0,12"><Button x:Name="CheckUpdatesButton" DockPanel.Dock="Right" Content="Jetzt prüfen" Click="CheckUpdatesButton_Click" Style="{StaticResource PrimaryButton}" Margin="16,0,0,0"/><StackPanel><TextBlock Text="Updates" Style="{DynamicResource PageTitle}"/><TextBlock Text="Kontofreie Prüfung deiner gespeicherten F95-Quellen" Style="{DynamicResource BodyText}" Margin="0,5,0,0"/></StackPanel></DockPanel>
+                <TextBlock x:Name="UpdateCheckStatusText" Grid.Row="1" Text="Noch nicht geprüft." Style="{DynamicResource BodyText}" TextWrapping="Wrap" Margin="0,0,0,18"/>
+                <Grid Grid.Row="2"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions><Border x:Name="UpdateErrorsPanel" Visibility="Collapsed" Background="#302C2630" BorderBrush="{DynamicResource WarningColor}" BorderThickness="1" CornerRadius="14" Padding="14" Margin="0,0,0,16"><StackPanel><TextBlock Text="Nicht geprüfte Spiele" Foreground="{DynamicResource WarningColor}" FontWeight="SemiBold" Margin="0,0,0,8"/><ScrollViewer MaxHeight="150"><ItemsControl x:Name="UpdateErrorsItemsControl"><ItemsControl.ItemTemplate><DataTemplate><DockPanel Margin="0,5"><Button DockPanel.Dock="Right" Content="Website öffnen" Click="OpenUpdateErrorSource_Click" Margin="12,0,0,0"/><StackPanel><TextBlock Text="{Binding Name}" FontWeight="SemiBold"/><TextBlock Text="{Binding UpdateCheckError}" Style="{DynamicResource BodyText}" TextWrapping="Wrap"/></StackPanel></DockPanel></DataTemplate></ItemsControl.ItemTemplate></ItemsControl></ScrollViewer></StackPanel></Border><Grid Grid.Row="1"><ListBox x:Name="AvailableUpdatesItemsControl" Style="{StaticResource GameList}" ItemTemplate="{StaticResource GameCardTemplate}"><ListBox.ItemsPanel><ItemsPanelTemplate><controls:VirtualizingGamePanel/></ItemsPanelTemplate></ListBox.ItemsPanel></ListBox><StackPanel x:Name="AvailableUpdatesEmptyState" VerticalAlignment="Center" HorizontalAlignment="Center"><TextBlock Text="Alles aktuell" Style="{StaticResource SectionTitle}" HorizontalAlignment="Center"/><TextBlock Text="Keine Updates verfügbar. F95-Links werden automatisch erkannt." Style="{DynamicResource BodyText}" TextWrapping="Wrap" TextAlignment="Center" MaxWidth="480" Margin="0,8,0,0"/></StackPanel></Grid></Grid>
+                <TextBlock x:Name="RecentlyUpdatedLabel" Grid.Row="3" Text="Kürzlich aktualisiert" Style="{DynamicResource SectionTitle}" Margin="0,24,0,12" Visibility="Collapsed"/>
+                <ListBox x:Name="RecentlyUpdatedItemsControl" Grid.Row="4" Style="{StaticResource GameList}" ItemTemplate="{StaticResource GameCardTemplate}" Visibility="Collapsed"><ListBox.ItemsPanel><ItemsPanelTemplate><controls:VirtualizingGamePanel/></ItemsPanelTemplate></ListBox.ItemsPanel></ListBox>
+            </Grid>
+
+            <Grid x:Name="AddGameView" Visibility="Collapsed">
+<Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+<DockPanel Grid.Row="0" Margin="0,0,0,16"><Button DockPanel.Dock="Right" Content="Zurück" Click="BackToHomeButton_Click" Margin="16,0,0,0"/><StackPanel><TextBlock x:Name="GameFormTitleTextBlock" Text="Spiel hinzufügen" Style="{DynamicResource PageTitle}"/><TextBlock Text="Ein neuer Platz in deiner Sammlung." Style="{DynamicResource BodyText}" Margin="0,6,0,0"/></StackPanel></DockPanel>
+<ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"><controls:AdaptiveColumns Breakpoint="800" FirstRatio="0.38" SecondFirstWhenStacked="True" Margin="0,0,0,96">
+<StackPanel><Border Style="{DynamicResource GlassPanel}"><StackPanel><TextBlock Text="Dein Cover" Style="{DynamicResource SectionTitle}" Margin="0,0,0,16"/>
+<Border x:Name="GameCoverBorder" Height="{Binding ActualWidth, RelativeSource={RelativeSource Self}, Converter={StaticResource ArtworkHeight}}" CornerRadius="16" Background="{DynamicResource SurfaceSecondary}" ClipToBounds="True"><Grid><TextBlock Text="✧" FontSize="54" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource TextTertiary}"/><controls:CroppedImage x:Name="GameCoverImage" CanDrag="True" DecodeWidth="1000" ToolTip="Ziehen, um den Bildausschnitt zu verschieben"/></Grid></Border>
+<TextBlock Text="Bild ziehen, um den Ausschnitt zu verschieben." TextWrapping="Wrap" Style="{DynamicResource BodyText}" Margin="0,12,0,0"/><Button Content="Cover wählen" Click="SelectCoverButton_Click" Margin="0,18,0,0"/></StackPanel></Border>
+<Border Style="{DynamicResource GlassPanel}" Margin="0,20,0,0"><StackPanel><TextBlock Text="Notizen" Style="{DynamicResource SectionTitle}"/><TextBlock Text="Optional · Installationshinweise, Mods oder Erinnerungen" Style="{DynamicResource BodyText}" TextWrapping="Wrap" Margin="0,8,0,14"/><TextBox x:Name="GameNotesTextBox" Height="120" AcceptsReturn="True" VerticalContentAlignment="Top" TextWrapping="Wrap" MaxLength="4000" VerticalScrollBarVisibility="Auto"/></StackPanel></Border></StackPanel>
+<Border Style="{DynamicResource GlassPanel}"><StackPanel><TextBlock Text="Spieldaten" Style="{DynamicResource SectionTitle}"/>
+<TextBlock Text="Name *" Style="{DynamicResource BodyText}" Margin="0,12,0,6"/><TextBox x:Name="GameNameTextBox" Tag="Wie heißt dein Spiel?" /><TextBlock x:Name="GameNameTextBoxError" Foreground="{DynamicResource DangerColor}" FontSize="12" TextWrapping="Wrap" Visibility="Collapsed" Margin="0,4,0,0"/>
+<TextBlock Text="Version *" Style="{DynamicResource BodyText}" Margin="0,12,0,6"/><TextBox x:Name="GameVersionTextBox" Tag="z. B. 1.0" /><TextBlock x:Name="GameVersionTextBoxError" Foreground="{DynamicResource DangerColor}" FontSize="12" TextWrapping="Wrap" Visibility="Collapsed" Margin="0,4,0,0"/>
+<TextBlock Text="Quelle *" Style="{DynamicResource BodyText}" Margin="0,12,0,6"/><TextBox x:Name="InstallSourceTextBox" Tag="z. B. F95Zone-Link oder Lokal" LostKeyboardFocus="InstallSourceTextBox_LostKeyboardFocus"/><TextBlock x:Name="InstallSourceTextBoxError" Foreground="{DynamicResource DangerColor}" FontSize="12" TextWrapping="Wrap" Visibility="Collapsed" Margin="0,4,0,0"/><WrapPanel Margin="0,8,0,0"><Button x:Name="LoadF95MetadataButton" Content="F95-Daten laden" Click="LoadF95MetadataButton_Click" Margin="0,0,8,8"/><Button x:Name="SmartArchiveButton" Content="ZIP auswählen &amp; automatisch einrichten" Click="SmartArchiveButton_Click" Style="{DynamicResource PrimaryButton}" Margin="0,0,0,8"/></WrapPanel><TextBlock x:Name="F95MetadataStatusText" Text="1. F95-Link einfügen · 2. Daten laden · 3. ZIP wählen. Ordner, Startdatei und Saves werden automatisch gesucht." Style="{DynamicResource BodyText}" TextWrapping="Wrap" Margin="0,3,0,0"/>
+<TextBlock Text="Spielordner *" Style="{DynamicResource BodyText}" Margin="0,12,0,6"/><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBox x:Name="GamePathTextBox" IsReadOnly="True" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/><Button Grid.Column="1" Content="Wählen" Click="SelectGameFolderButton_Click" Margin="10,0,0,0"/></Grid><TextBlock x:Name="GamePathTextBoxError" Foreground="{DynamicResource DangerColor}" FontSize="12" TextWrapping="Wrap" Visibility="Collapsed" Margin="0,4,0,0"/>
+<TextBlock Text="Startdatei *" Style="{DynamicResource BodyText}" Margin="0,12,0,6"/><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBox x:Name="ExecutableTextBox" IsReadOnly="True" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/><Button Grid.Column="1" Content="Wählen" Click="SelectExecutableButton_Click" Margin="10,0,0,0"/></Grid><TextBlock x:Name="ExecutableTextBoxError" Foreground="{DynamicResource DangerColor}" FontSize="12" TextWrapping="Wrap" Visibility="Collapsed" Margin="0,4,0,0"/>
+<TextBlock Text="Spielstandordner (optional)" Style="{DynamicResource BodyText}" Margin="0,12,0,6"/><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBox x:Name="SavePathTextBox" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/><Button Grid.Column="1" Content="Wählen" Click="SelectSaveFolderButton_Click" Margin="10,0,0,0"/></Grid><TextBlock x:Name="SavePathTextBoxError" Foreground="{DynamicResource DangerColor}" FontSize="12" TextWrapping="Wrap" Visibility="Collapsed" Margin="0,4,0,0"/>
+<WrapPanel Margin="0,12,0,0"><Button Content="Saves finden" Click="FindSaves_Click" Margin="0,0,8,8"/><Button x:Name="ProbeSaveButton" Content="Spiel starten und Save-Ordner suchen" Click="LaunchToCreateSave_Click" Margin="0,0,8,8"/><Button Content="Später festlegen" Click="UnknownSave_Click" Margin="0,0,8,8"/></WrapPanel><CheckBox x:Name="ManageLocalGameCheckBox" Content="Spiel in den GameLauncher-Ordner verschieben" IsChecked="True" ToolTip="Der gesamte ausgewählte Spielordner wird sicher in die GameLibrary übernommen." Margin="0,14,0,0"/><CheckBox x:Name="GameFavoriteCheckBox" Content="Als Favorit merken" Margin="0,12,0,0"/>
+<TextBlock Text="Mod-Link (optional)" Style="{DynamicResource BodyText}" Margin="0,12,0,6"/><TextBox x:Name="GameModUrlTextBox" Tag="Link zur Mod-Seite oder zum Mod-Beitrag"/>
+<TextBlock Text="Zusätzliche Versionsinformationen (optional)" Style="{DynamicResource BodyText}" Margin="0,12,0,6"/><TextBox x:Name="GameVersionInfoTextBox" Tag="Build, Änderungen oder eigene Hinweise" MaxLength="2000"/><TextBlock x:Name="GameVersionInfoTextBoxError" Foreground="{DynamicResource DangerColor}" FontSize="12" TextWrapping="Wrap" Visibility="Collapsed" Margin="0,4,0,0"/>
+<TextBlock Text="* Pflichtangaben für installierte Spiele" Style="{DynamicResource Eyebrow}" Margin="0,16,0,0" TextWrapping="Wrap"/>
+</StackPanel></Border></controls:AdaptiveColumns></ScrollViewer>
+<Button x:Name="SaveGameButton" Grid.Row="2" Content="Spiel hinzufügen" Click="AddGameButton_Click" Style="{DynamicResource PrimaryButton}" HorizontalAlignment="Right" Margin="0,18,0,0"/><Button x:Name="WishlistButton" Grid.Row="2" Content="Zur Wunschliste hinzufügen" Click="WishlistButton_Click" Style="{DynamicResource SecondaryButton}" HorizontalAlignment="Right" Margin="0,18,12,0"/>
+</Grid>
+<Grid x:Name="GameDetailView" Visibility="Collapsed">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <Grid Grid.Row="0" Margin="0,0,0,25">
+                    <StackPanel>
+                        <TextBlock Text="Spieldetails" Style="{StaticResource PageTitle}"/>
+                        <TextBlock Text="" Style="{StaticResource BodyText}" Margin="0,5,0,0"/>
+                    </StackPanel>
+                    <Button Content="Zurück" Click="BackFromGameDetailButton_Click" Style="{StaticResource SecondaryButton}" Width="105" HorizontalAlignment="Right"/>
+                </Grid>
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"><StackPanel Margin="0,0,0,96">
+                    <Border x:Name="GameDetailHero" Height="320" CornerRadius="24" ClipToBounds="True" Background="{DynamicResource SurfaceSecondary}" Margin="0,0,0,18"><Grid>
+                        <controls:CroppedImage x:Name="GameDetailHeroBackdrop" DecodeWidth="1000" AnimateGif="False" Opacity="0.5"/><Border Background="#A00A0B0D"/>
+                        <controls:CroppedImage x:Name="GameDetailCoverImage" DecodeWidth="900" FitInside="True" CanDrag="True" CropChanged="GameDetailCoverImage_CropChanged" ToolTip="Das vollständige Cover wird angezeigt; Ziehen speichert weiterhin den Fokus für zugeschnittene Hintergründe" Margin="28"/>
+                    </Grid></Border>
+                    <StackPanel x:Name="GameDetailGallerySection" Visibility="Collapsed" Margin="0,0,0,22"><DockPanel Margin="2,0,2,12"><TextBlock Text="Spielbilder" Style="{DynamicResource SectionTitle}"/><TextBlock x:Name="GameDetailGalleryCount" DockPanel.Dock="Right" Style="{DynamicResource BodyText}"/></DockPanel><ItemsControl x:Name="GameDetailGalleryItems"><ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel><ItemsControl.ItemTemplate><DataTemplate><Border Width="280" Height="158" Margin="0,0,12,12" CornerRadius="14" ClipToBounds="True" Background="{DynamicResource SurfaceSecondary}" BorderBrush="{DynamicResource BorderColor}" BorderThickness="1"><controls:CroppedImage ImagePath="{Binding}" DecodeWidth="560" FitInside="True"/></Border></DataTemplate></ItemsControl.ItemTemplate></ItemsControl></StackPanel>
+                    <controls:AdaptiveColumns Breakpoint="0" FirstRatio="0">
+                        <StackPanel Grid.Column="0" VerticalAlignment="Top" Visibility="Collapsed">
+                            <Border Height="{Binding ActualWidth, RelativeSource={RelativeSource Self}, Converter={StaticResource ArtworkHeight}}" CornerRadius="16" Background="{DynamicResource SurfaceBackground}" BorderBrush="{DynamicResource BorderColor}" BorderThickness="1" ClipToBounds="True">
+                                <controls:CroppedImage DecodeWidth="1000" FitInside="True"/>
+                            </Border>
+                            <TextBlock Text="Bild mit gedrückter Maustaste verschieben · Position wird automatisch gespeichert" Style="{DynamicResource BodyText}" TextWrapping="Wrap" Margin="4,10,4,0"/>
+                        </StackPanel>
+                        <StackPanel>
+                            <TextBlock x:Name="GameDetailNameTextBlock" Text="Name" Style="{StaticResource PageTitle}" TextWrapping="Wrap"/>
+                            <Border Background="{DynamicResource AccentSoft}" CornerRadius="16" Padding="10,5" HorizontalAlignment="Left" Margin="0,10,0,18">
+                                <TextBlock x:Name="GameDetailStatusTextBlock" Text="Installiert" FontSize="12" Foreground="{DynamicResource AccentColor}"/>
+                            </Border>
+                            <Border x:Name="GameDetailUpdatePanel" Background="#303F67" BorderBrush="{DynamicResource AccentColor}" BorderThickness="1" CornerRadius="14" Padding="14" Margin="0,0,0,16" Visibility="Collapsed"><StackPanel><TextBlock Text="Update verfügbar" Foreground="{DynamicResource AccentColor}" FontWeight="SemiBold"/><TextBlock x:Name="GameDetailUpdateText" Style="{DynamicResource BodyText}" TextWrapping="Wrap" Margin="0,5,0,10"/><WrapPanel><Button Content="Update installieren …" Click="GameDetailInstallButton_Click" Style="{DynamicResource PrimaryButton}" Margin="0,0,8,8"/><Button Content="Neue Version ist schon installiert" Click="MarkOnlineVersionInstalled_Click" Style="{DynamicResource SecondaryButton}" Margin="0,0,8,8"/><Button Content="Diese Version ignorieren" Click="IgnoreOnlineVersion_Click" Style="{DynamicResource SecondaryButton}" Margin="0,0,0,8"/></WrapPanel></StackPanel></Border>
+                            <Border x:Name="GameDetailUpdateErrorPanel" Background="#302C2630" BorderBrush="{DynamicResource WarningColor}" BorderThickness="1" CornerRadius="14" Padding="14" Margin="0,0,0,16" Visibility="Collapsed"><StackPanel><TextBlock Text="Update-Prüfung nicht möglich" Foreground="{DynamicResource WarningColor}" FontWeight="SemiBold"/><TextBlock x:Name="GameDetailUpdateErrorText" Style="{DynamicResource BodyText}" TextWrapping="Wrap" Margin="0,5,0,0"/></StackPanel></Border>
+                            <Border x:Name="GameDetailPathWarningPanel" Background="#302C2630" BorderBrush="{DynamicResource DangerColor}" BorderThickness="1" CornerRadius="14" Padding="14" Margin="0,0,0,16" Visibility="Collapsed"><StackPanel><TextBlock Text="Installation nicht erreichbar" Foreground="{DynamicResource DangerColor}" FontWeight="SemiBold"/><TextBlock x:Name="GameDetailPathWarningText" Style="{DynamicResource BodyText}" TextWrapping="Wrap" Margin="0,5,0,10"/><Button Content="Installation neu verknüpfen" Click="RelinkMissingGame_Click" HorizontalAlignment="Left"/></StackPanel></Border>
+                            <WrapPanel>
+                                <Button x:Name="GameDetailPlayButton" Content="Spielen" Click="GameDetailPlayButton_Click" Style="{StaticResource PrimaryButton}" Padding="25,0" Margin="0,0,10,8"/>
+                                <Button x:Name="GameDetailInstallButton" Content="Installieren" Click="GameDetailInstallButton_Click" Style="{StaticResource PrimaryButton}" Padding="25,0" Margin="0,0,10,8" Visibility="Collapsed"/>
+                                <Button x:Name="GameDetailEditButton" Content="Bearbeiten" Click="GameDetailEditButton_Click" Style="{StaticResource SecondaryButton}" Padding="25,0" Margin="0,0,10,8"/>
+                                <Button x:Name="GameDetailFavoriteButton" Content="Favorit" Click="GameDetailFavoriteButton_Click" Style="{StaticResource SecondaryButton}" Padding="20,0" Margin="0,0,10,8"/>
+                                <Button x:Name="GameDetailDeleteButton" Content="Entfernen" Click="GameDetailDeleteButton_Click" Style="{StaticResource DangerButton}" Padding="20,0" Margin="0,0,10,8"/>
+                                <Button x:Name="GameDetailAbsoluteDeleteButton" Content="Lokale Dateien entfernen" Click="GameDetailAbsoluteDeleteButton_Click" Style="{StaticResource DangerButton}" Padding="20,0" Margin="0,0,10,8" Visibility="Collapsed"/>
+                                <Button x:Name="GameDetailFullDeleteButton" Content="Vollständig löschen" Click="GameDetailFullDeleteButton_Click" Style="{StaticResource DangerButton}" Padding="20,0" Margin="0,0,10,8"/>
+                            </WrapPanel>
+                            <WrapPanel Margin="0,8,0,0">
+                                <Button x:Name="GameDetailOpenSourceButton" Content="Website öffnen ↗" Click="GameDetailOpenSourceButton_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,10,0"/>
+                                <Button x:Name="GameDetailOpenGameFolderButton" Content="Spielordner" Click="GameDetailOpenGameFolderButton_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,10,0"/>
+                                <Button x:Name="GameDetailOpenSaveFolderButton" Content="Spielstände" Click="GameDetailOpenSaveFolderButton_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,10,0"/>
+                                <Button x:Name="GameDetailOpenModButton" Content="Mod verfügbar ↗" Click="GameDetailOpenModButton_Click" Style="{StaticResource SecondaryButton}" Margin="0,0,10,0" Visibility="Collapsed"/>
+                                <Button x:Name="GameDetailInstallModButton" Content="Mod installieren · Spielordner öffnen" Click="GameDetailInstallModButton_Click" Style="{StaticResource SecondaryButton}" Visibility="Collapsed"/>
+                            </WrapPanel>
+                            <Border Height="1" Background="{DynamicResource BorderColor}" Margin="0,24,0,20"/>
+                                <TextBlock x:Name="GameDetailArchiveText" Style="{DynamicResource BodyText}" TextWrapping="Wrap" Margin="0,0,0,20"/>
+                                <Border Style="{DynamicResource GlassPanel}" Margin="0,0,0,16" Padding="20">
+                                    <StackPanel>
+                                        <TextBlock Text="Notizen" Style="{DynamicResource SectionTitle}"/>
+                                        <TextBlock x:Name="GameDetailNotesText" Style="{DynamicResource BodyText}" TextWrapping="Wrap" Margin="0,8,0,8" MaxHeight="60" x:FieldModifier="public"/>
+                                        <Button x:Name="GameDetailNotesMoreButton" Content="Mehr anzeigen ▾" Click="DetailMoreText_Click" Style="{DynamicResource SecondaryButton}" HorizontalAlignment="Left" Margin="0,0,0,0" Visibility="Collapsed" Tag="Notes"/>
+                                    </StackPanel>
+                                </Border>
+                                <Border Style="{DynamicResource GlassPanel}" Margin="0,0,0,16" Padding="20">
+                                    <StackPanel>
+                                        <TextBlock Text="Versionsinformationen" Style="{DynamicResource SectionTitle}"/>
+                                        <TextBlock x:Name="GameDetailVersionInfoText" Style="{DynamicResource BodyText}" TextWrapping="Wrap" Margin="0,8,0,8" MaxHeight="60" x:FieldModifier="public"/>
+                                        <Button x:Name="GameDetailVersionInfoMoreButton" Content="Mehr anzeigen ▾" Click="DetailMoreText_Click" Style="{DynamicResource SecondaryButton}" HorizontalAlignment="Left" Margin="0,0,0,0" Visibility="Collapsed" Tag="VersionInfo"/>
+                                    </StackPanel>
+                                </Border>
+                                <Border Style="{DynamicResource GlassPanel}" Margin="0,0,0,16" Padding="20">
+                                    <StackPanel>
+                                        <TextBlock Text="Installationsdetails" Style="{DynamicResource SectionTitle}" Margin="0,0,0,12"/>
+                                        <StackPanel>
+                                            <DockPanel Margin="0,0,0,8">
+                                                <TextBlock Text="Version" Style="{DynamicResource Eyebrow}" Width="120" VerticalAlignment="Center"/>
+                                                <TextBlock x:Name="GameDetailVersionTextBlock" Text="-" Style="{DynamicResource BodyText}" FontWeight="SemiBold"/>
+                                            </DockPanel>
+                                            <DockPanel Margin="0,0,0,8">
+                                                <TextBlock Text="Quelle" Style="{DynamicResource Eyebrow}" Width="120" VerticalAlignment="Center"/>
+                                                <TextBlock x:Name="GameDetailSourceTextBlock" Text="-" Style="{DynamicResource BodyText}" TextWrapping="Wrap"/>
+                                            </DockPanel>
+                                            <TextBlock x:Name="GameDetailF95MetaTextBlock" Text="" Style="{DynamicResource BodyText}" TextWrapping="Wrap" Margin="120,0,0,8" Visibility="Collapsed"/>
+                                            <DockPanel Margin="0,0,0,8">
+                                                <TextBlock Text="Spielordner" Style="{DynamicResource Eyebrow}" Width="120" VerticalAlignment="Center"/>
+                                                <TextBlock x:Name="GameDetailGamePathTextBlock" Text="-" Style="{DynamicResource BodyText}" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"/>
+                                            </DockPanel>
+                                            <DockPanel Margin="0,0,0,8">
+                                                <TextBlock Text="Spielstand" Style="{DynamicResource Eyebrow}" Width="120" VerticalAlignment="Center"/>
+                                                <TextBlock x:Name="GameDetailSavePathTextBlock" Text="-" Style="{DynamicResource BodyText}" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"/>
+                                            </DockPanel>
+                                            <DockPanel Margin="0,0,0,8">
+                                                <TextBlock Text="Startdatei" Style="{DynamicResource Eyebrow}" Width="120" VerticalAlignment="Center"/>
+                                                <TextBlock x:Name="GameDetailExecutableTextBlock" Text="-" Style="{DynamicResource BodyText}" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"/>
+                                            </DockPanel>
+                                            <DockPanel Margin="0,0,0,0">
+                                                <TextBlock Text="Spielzeit" Style="{DynamicResource Eyebrow}" Width="120" VerticalAlignment="Center"/>
+                                                <TextBlock x:Name="GameDetailPlaytimeTextBlock" Text="0h 0min played" Style="{DynamicResource BodyText}"/>
+                                            </DockPanel>
+                                            <DockPanel>
+                                                <TextBlock Text="Zuletzt gespielt" Style="{DynamicResource Eyebrow}" Width="120" VerticalAlignment="Center"/>
+                                                <TextBlock x:Name="GameDetailLastPlayedTextBlock" Text="Noch nie" Style="{DynamicResource BodyText}"/>
+                                            </DockPanel>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                            <StackPanel x:Name="GameDetailVersionsSection" Visibility="Collapsed">
+                                <Border Height="1" Background="{DynamicResource BorderColor}" Margin="0,8,0,16"/>
+                                <TextBlock Text="Installierte Versionen" Style="{StaticResource SectionTitle}" Margin="0,0,0,10"/>
+                                <ItemsControl x:Name="GameDetailVersionsList">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Background="{DynamicResource SurfaceSecondary}" CornerRadius="12" Padding="14" Margin="0,0,0,8">
+                                                <DockPanel>
+                                                    <Button Content="Als Standard" Click="VersionSetDefault_Click" Style="{DynamicResource SecondaryButton}" DockPanel.Dock="Right" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                                                    <StackPanel>
+                                                        <TextBlock FontWeight="SemiBold" Text="{Binding GameVersion}"/>
+                                                        <TextBlock Style="{DynamicResource BodyText}" Foreground="{DynamicResource TextSecondary}" Text="{Binding GamePath}" TextTrimming="CharacterEllipsis"/>
+                                                    </StackPanel>
+                                                </DockPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </StackPanel>
+                    </controls:AdaptiveColumns>
+                </StackPanel></ScrollViewer>
+            </Grid>
+
+            <Grid x:Name="WaitingForUpdatesView" Visibility="Collapsed">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <StackPanel Grid.Row="0" Margin="0,0,0,25">
+                    <TextBlock Text="Warten auf Updates" Style="{StaticResource PageTitle}"/>
+                    <TextBlock Text="Für später aufgehoben" Style="{StaticResource BodyText}" Margin="0,5,0,0"/>
+                </StackPanel>
+                <Grid Grid.Row="1">
+                    <ListBox x:Name="GameItemsControlWaiting" Style="{StaticResource GameList}" ItemTemplate="{StaticResource GameCardTemplate}"><ListBox.ItemsPanel><ItemsPanelTemplate><controls:VirtualizingGamePanel/></ItemsPanelTemplate></ListBox.ItemsPanel></ListBox>
+                    <StackPanel x:Name="WaitingEmptyState" VerticalAlignment="Center" HorizontalAlignment="Center" Visibility="Collapsed">
+                        <TextBlock Text="Hier wartet noch kein Spiel." Style="{StaticResource SectionTitle}" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Grid>
+            </Grid>
+
+            <Grid x:Name="FinishedView" Visibility="Collapsed">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <StackPanel Grid.Row="0" Margin="0,0,0,25">
+                    <TextBlock Text="Abgeschlossen" Style="{StaticResource PageTitle}"/>
+                    <TextBlock Text="Ein Teil deiner Spielgeschichte" Style="{StaticResource BodyText}" Margin="0,5,0,0"/>
+                </StackPanel>
+                <Grid Grid.Row="1">
+                    <ListBox x:Name="GameItemsControlFinished" Style="{StaticResource GameList}" ItemTemplate="{StaticResource GameCardTemplate}"><ListBox.ItemsPanel><ItemsPanelTemplate><controls:VirtualizingGamePanel/></ItemsPanelTemplate></ListBox.ItemsPanel></ListBox>
+                    <StackPanel x:Name="FinishedEmptyState" VerticalAlignment="Center" HorizontalAlignment="Center" Visibility="Collapsed">
+                        <TextBlock Text="Noch keine abgeschlossenen Spiele." Style="{StaticResource SectionTitle}" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Grid>
+            </Grid>
+
+            <Grid x:Name="DeletedView" Visibility="Collapsed">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <StackPanel Grid.Row="0" Margin="0,0,0,25">
+                    <TextBlock Text="Gelöscht" Style="{StaticResource PageTitle}"/>
+                    <TextBlock Text="Entfernte Spiele bleiben hier als Eintrag erhalten und können erneut eingebunden werden." Style="{StaticResource BodyText}" TextWrapping="Wrap" Margin="0,5,0,0"/>
+                </StackPanel>
+                <Grid Grid.Row="1">
+                    <ListBox x:Name="GameItemsControlDeleted" Style="{StaticResource GameList}" ItemTemplate="{StaticResource GameCardTemplate}"><ListBox.ItemsPanel><ItemsPanelTemplate><controls:VirtualizingGamePanel/></ItemsPanelTemplate></ListBox.ItemsPanel></ListBox>
+                    <StackPanel x:Name="DeletedEmptyState" VerticalAlignment="Center" HorizontalAlignment="Center" Visibility="Collapsed">
+                        <TextBlock Text="Keine gelöschten Spiele." Style="{StaticResource SectionTitle}" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Grid>
+            </Grid>
+
+            <Grid x:Name="InstallGameView" Visibility="Collapsed">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid Grid.Row="0" Margin="0,0,0,25">
+                    <StackPanel>
+                        <TextBlock Text="Erneut installieren" Style="{StaticResource PageTitle}"/>
+                        <TextBlock Text="Bekanntes Spiel, gleiche Historie" Style="{StaticResource BodyText}" Margin="0,5,0,0"/>
+                    </StackPanel>
+                    <Button Content="Zurück" Click="BackFromInstallButton_Click" Style="{StaticResource SecondaryButton}" Width="105" HorizontalAlignment="Right"/>
+                </Grid>
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <Border Background="{DynamicResource SurfaceBackground}" BorderBrush="{DynamicResource BorderColor}" BorderThickness="1" CornerRadius="16" Padding="22" Margin="0,0,0,16">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="90"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Border Width="80" Height="80" CornerRadius="16" ClipToBounds="True" Background="{DynamicResource SurfaceSecondary}">
+                                    <controls:CroppedImage x:Name="InstallCoverImage"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" Margin="16,0,0,0">
+                                    <TextBlock x:Name="InstallKnownNameTextBlock" Text="Game" Style="{StaticResource SectionTitle}"/>
+                                    <TextBlock x:Name="InstallGameIdTextBlock" Text="ID" Style="{StaticResource BodyText}" Margin="0,6,0,0"/>
+                                    <TextBlock x:Name="InstallVersionTextBlock" Text="Version" Style="{StaticResource BodyText}" Margin="0,4,0,0"/>
+                                    <TextBlock x:Name="InstallSourceTextBlock" Text="Quelle" Style="{StaticResource BodyText}" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                        <TextBlock Text="Neue Version" Style="{StaticResource BodyText}" Margin="0,0,0,6"/>
+                        <TextBox x:Name="InstallVersionTextBox" Margin="0,0,0,15"/>
+                        <TextBlock Text="Spielordner" Style="{StaticResource BodyText}" Margin="0,0,0,6"/>
+                        <Grid Margin="0,0,0,15">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="InstallGamePathTextBox" IsReadOnly="True"/>
+                            <Button Grid.Column="1" Content="Wählen" Click="SelectInstallGameFolder_Click" Style="{StaticResource SecondaryButton}" Width="95" Margin="10,0,0,0"/>
+                        </Grid>
+                        <TextBlock Text="Startdatei" Style="{StaticResource BodyText}" Margin="0,0,0,6"/>
+                        <Grid Margin="0,0,0,15">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="InstallExecutableTextBox" IsReadOnly="True"/>
+                            <Button Grid.Column="1" Content="Wählen" Click="SelectInstallExecutable_Click" Style="{StaticResource SecondaryButton}" Width="95" Margin="10,0,0,0"/>
+                        </Grid>
+                        <Button Content="Komprimierte Spieldatei entpacken …" Click="ExtractArchiveForReinstall_Click" HorizontalAlignment="Left" Margin="0,0,0,15"/>
+                        <TextBlock Text="Spielstandordner (optional)" Style="{StaticResource BodyText}" Margin="0,0,0,6"/>
+                        <Grid Margin="0,0,0,18">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="InstallSavePathTextBox"/>
+                            <Button Grid.Column="1" Content="Wählen" Click="SelectInstallSaveFolder_Click" Style="{StaticResource SecondaryButton}" Width="95" Margin="10,0,0,0"/>
+                        </Grid>
+                        <Border Background="{DynamicResource SurfaceBackground}" BorderBrush="{DynamicResource BorderColor}" BorderThickness="1" CornerRadius="16" Padding="18">
+                            <StackPanel>
+                                <WrapPanel Margin="0,0,0,12"><Button Content="Saves finden" Click="FindSaves_Click" Margin="0,0,8,8"/><Button x:Name="InstallProbeSaveButton" Content="Spiel starten und Save-Ordner suchen" Click="LaunchToCreateSave_Click" Margin="0,0,8,8"/><Button Content="Später festlegen" Click="UnknownSave_Click" Margin="0,0,8,8"/></WrapPanel><TextBlock x:Name="InstallArchiveStatusTextBlock" Text="Kein archivierter Spielstand" Style="{StaticResource SectionTitle}"/>
+                                <CheckBox x:Name="RestoreSaveCheckBox" Content="Archivierten Spielstand wiederherstellen" Foreground="{DynamicResource TextPrimary}" Margin="0,12,0,0" IsEnabled="False"/>
+                                <CheckBox x:Name="TransferCurrentSaveCheckBox" Content="Aktuellen Spielstand in die neue Version übertragen (mit Sicherheitskopie)" Foreground="{DynamicResource TextPrimary}" Margin="0,12,0,0"/>
+                                <CheckBox x:Name="KeepOldInstallationCheckBox" Content="Alte Spielversion zur Kontrolle behalten" Foreground="{DynamicResource TextPrimary}" Margin="0,12,0,0" IsChecked="True"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+                <Button Content="Installieren" Click="ConfirmInstallButton_Click" Style="{StaticResource PrimaryButton}" Width="170" HorizontalAlignment="Right" Margin="0,20,0,0" Grid.Row="2"/>
+            </Grid>
+
+            <Grid x:Name="SettingsView" Visibility="Collapsed">
+<Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+<StackPanel Grid.Row="0" Margin="0,0,0,18"><TextBlock Text="Einstellungen" Style="{DynamicResource PageTitle}"/><TextBlock Text="Dein Launcher. So, wie du ihn magst." Style="{DynamicResource BodyText}" Margin="0,6,0,0"/></StackPanel>
+<ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"><StackPanel Margin="0,0,0,96">
+<controls:AdaptiveColumns Breakpoint="900"><Border Style="{DynamicResource GlassPanel}"><StackPanel><TextBlock Text="Allgemein" Style="{DynamicResource SectionTitle}" Margin="0,0,0,20"/><CheckBox x:Name="SettingsAutostartCheckBox" Content="Mit Windows starten" Margin="0,0,0,12"/><CheckBox x:Name="SettingsTrayCheckBox" Content="Beim Schließen in den Infobereich minimieren" Margin="0,0,0,12"/><CheckBox x:Name="SettingsEnergyCheckBox" Content="Ruhemodus während des Spielens" Margin="0,0,0,12"/><CheckBox x:Name="SettingsRestoreCheckBox" Content="Launcher nach Spielende wieder anzeigen" Margin="0,0,0,12"/></StackPanel></Border>
+<Border Style="{DynamicResource GlassPanel}"><StackPanel><TextBlock Text="Darstellung" Style="{DynamicResource SectionTitle}" Margin="0,0,0,20"/><TextBlock Text="Dunkel · Apple-inspiriert" Style="{DynamicResource BodyText}" Margin="0,0,0,16"/><DockPanel><TextBlock Text="UI-Skalierung"/><TextBlock Text="{Binding Value, ElementName=SettingsScaleSlider, StringFormat={}{0:P0}}" HorizontalAlignment="Right"/></DockPanel><Slider x:Name="SettingsScaleSlider" Minimum="0.8" Maximum="2" Value="1" TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="0,14,0,18" ToolTip="Größe von Schrift und Bedienelementen"/><CheckBox x:Name="SettingsTransparencyCheckBox" Content="Transparenz reduzieren" Margin="0,0,0,12"/><CheckBox x:Name="SettingsMotionCheckBox" Content="Bewegung reduzieren" Margin="0,0,0,12"/><TextBlock Text="Hintergrundbild" Style="{DynamicResource BodyText}" Margin="0,8,0,6"/><Grid Margin="0,0,0,12"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBox x:Name="SettingsBackgroundTextBox" IsReadOnly="True" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/><Button Grid.Column="1" Content="…" Click="SelectBackground_Click" ToolTip="Hintergrundbild wählen" Margin="8,0,0,0"/></Grid><controls:CroppedImage x:Name="BackgroundPreview" ImagePath="{Binding Text, ElementName=SettingsBackgroundTextBox}" CanDrag="True" DecodeWidth="1000" Height="130" Margin="0,0,0,8" ToolTip="Hintergrund-Ausschnitt mit der Maus verschieben"/><TextBlock Text="Bild ziehen, um den Ausschnitt zu verschieben." Style="{DynamicResource BodyText}" TextWrapping="Wrap" Margin="0,0,0,12"/><Button Content="Standardhintergrund" Click="ResetBackground_Click" HorizontalAlignment="Left"/></StackPanel></Border></controls:AdaptiveColumns>
+<controls:AdaptiveColumns Breakpoint="900" Margin="0,20,0,0"><Border Style="{DynamicResource GlassPanel}"><StackPanel><TextBlock Text="Tastatur und Maus" Style="{DynamicResource SectionTitle}" Margin="0,0,0,20"/><CheckBox x:Name="SettingsLaunchShortcutCheckBox" Content="Launcher auch im geschlossenen Zustand starten" Margin="0,0,0,12"/><DockPanel Margin="0,0,0,10"><TextBlock Text="Strg + Alt +" VerticalAlignment="Center" Margin="0,0,12,0"/><TextBox x:Name="SettingsLaunchKeyTextBox" Text="G" MaxLength="1" Width="60" HorizontalAlignment="Left" ToolTip="Buchstabe oder Ziffer für den Launcher-Start"/></DockPanel><TextBlock Text="Windows-Startkombination · Standard: Strg + Alt + G" Style="{DynamicResource BodyText}" TextWrapping="Wrap" Margin="0,0,0,20"/><CheckBox x:Name="SettingsKeyboardCheckBox" Content="Globale Tastenkombination aktivieren" Margin="0,0,0,12"/><Grid Margin="0,0,0,16"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBox x:Name="SettingsHotkeyTextBox" IsReadOnly="True" PreviewKeyDown="CaptureHotkey_KeyDown"/><Button x:Name="CaptureHotkeyButton" Grid.Column="1" Content="Aufnehmen" Click="CaptureHotkey_Click" Margin="8,0,0,0"/></Grid><CheckBox x:Name="SettingsShortcutCheckBox" Content="Zusätzlich linke + rechte Maustaste" Margin="0,0,0,12"/><CheckBox x:Name="SettingsMinimizeGameCheckBox" Content="Auch das laufende Spiel minimieren" Margin="0,0,0,12"/></StackPanel></Border>
+<Border Style="{DynamicResource GlassPanel}"><StackPanel><TextBlock Text="Spielerkennung" Style="{DynamicResource SectionTitle}" Margin="0,0,0,20"/><CheckBox x:Name="SettingsDiscoveryCheckBox" Content="Neue Spiele automatisch erkennen" Margin="0,0,0,12"/><CheckBox x:Name="SettingsAutoAddCheckBox" Content="Eindeutige Funde automatisch hinzufügen" Margin="0,0,0,12"/><TextBlock Text="Spielordner / überwachter Ordner" Style="{DynamicResource BodyText}" Margin="0,8,0,6"/><Grid Margin="0,0,0,12"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBox x:Name="SettingsDefaultGameFolderTextBox" IsReadOnly="True" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/><Button Grid.Column="1" Content="…" Click="SelectDefaultGameFolder_Click" ToolTip="Spielordner / überwachter Ordner wählen" Margin="8,0,0,0"/></Grid></StackPanel></Border></controls:AdaptiveColumns>
+<Border Style="{DynamicResource GlassPanel}" Margin="0,20,0,0">
+    <StackPanel>
+        <DockPanel Margin="0,0,0,12"><TextBlock Text="Handy- &amp; iPad-Host" Style="{DynamicResource SectionTitle}"/><TextBlock x:Name="RemoteHostStateText" Text="Aus" HorizontalAlignment="Right" Foreground="{DynamicResource TextSecondary}"/></DockPanel>
+        <TextBlock Text="DXGI-Vollbildaufnahme mit sichtbarer Maus und einem Latenzpuffer, der alte Bilder automatisch verwirft." Style="{DynamicResource BodyText}" TextWrapping="Wrap" Margin="0,0,0,10"/>
+        <TextBlock x:Name="RemoteHostPerformanceText" Text="DXGI-Vollbildaufnahme bereit" Foreground="{DynamicResource AccentColor}" FontWeight="SemiBold" Margin="0,0,0,14"/>
+        <WrapPanel Margin="0,0,0,12"><Button x:Name="RemoteHostToggleButton" Content="Host-Modus starten" Click="RemoteHostToggle_Click" Style="{DynamicResource PrimaryButton}" Margin="0,0,8,8"/><Button Content="Adresse kopieren" Click="CopyRemoteAddress_Click" Margin="0,0,8,8"/><Button Content="PIN kopieren" Click="CopyRemotePin_Click" Margin="0,0,8,8"/><Button Content="60 FPS · HD" Click="RemotePerformancePreset_Click" Margin="0,0,0,8"/></WrapPanel>
+        <TextBlock Text="Adresse auf iPhone/iPad" Style="{DynamicResource BodyText}"/><TextBox x:Name="RemoteHostAddressTextBox" IsReadOnly="True" Text="Host-Modus ist aus" Margin="0,6,0,10"/>
+        <DockPanel Margin="0,0,0,14"><TextBlock Text="Sitzungs-PIN" Style="{DynamicResource BodyText}"/><TextBlock x:Name="RemoteHostPinText" Text="------" HorizontalAlignment="Right" FontSize="22" FontWeight="Bold" Foreground="{DynamicResource AccentColor}"/></DockPanel>
+        <CheckBox x:Name="SettingsRemoteAutoStartCheckBox" Content="Host-Modus beim Start des Launchers automatisch einschalten" Margin="0,0,0,12"/>
+        <CheckBox x:Name="SettingsRemotePrivacyCheckBox" Content="PC-Bildschirm abdunkeln (bei DXGI deaktiviert, damit das Handybild sichtbar bleibt)" Margin="0,0,0,12" IsEnabled="False" ToolTip="Ein schwarzes Fenster wird von der Vollbildaufnahme mitgesendet. Deshalb bleibt diese Option aus, solange DXGI für Vollbildspiele verwendet wird."/>
+        <CheckBox x:Name="SettingsRemotePerformanceCheckBox" Content="Streaming-Fokusmodus (Launcher-Scans pausieren und Spiel/Stream bevorzugen)" Margin="0,0,0,14"/>
+        <DockPanel><TextBlock Text="Port" VerticalAlignment="Center"/><TextBox x:Name="SettingsRemotePortTextBox" Text="17840" Width="100" HorizontalAlignment="Right"/></DockPanel>
+        <DockPanel Margin="0,14,0,0"><TextBlock Text="Bilder pro Sekunde"/><TextBlock Text="{Binding Value, ElementName=SettingsRemoteFpsSlider, StringFormat={}{0:0} FPS}" HorizontalAlignment="Right"/></DockPanel>
+        <Slider x:Name="SettingsRemoteFpsSlider" Minimum="15" Maximum="60" Value="60" TickFrequency="15" IsSnapToTickEnabled="True" Margin="0,8,0,8"/>
+        <DockPanel><TextBlock Text="Bildqualität"/><TextBlock Text="{Binding Value, ElementName=SettingsRemoteQualitySlider, StringFormat={}{0:0}%}" HorizontalAlignment="Right"/></DockPanel>
+        <Slider x:Name="SettingsRemoteQualitySlider" Minimum="35" Maximum="92" Value="75" TickFrequency="5" Margin="0,8,0,8"/>
+        <DockPanel><TextBlock Text="Streaming-Auflösung"/><TextBlock Text="{Binding Value, ElementName=SettingsRemoteWidthSlider, StringFormat={}{0:0}px breit}" HorizontalAlignment="Right"/></DockPanel>
+        <Slider x:Name="SettingsRemoteWidthSlider" Minimum="1280" Maximum="1920" Value="1280" TickFrequency="640" IsSnapToTickEnabled="True" Margin="0,8,0,12"/>
+        <TextBlock Text="HD/60 FPS ist das Zielprofil; die echte Rate wird live angezeigt und hängt von PC, Spiel und WLAN ab. Für Administrator-Spiele muss auch der GameLauncher als Administrator laufen." Style="{DynamicResource BodyText}" TextWrapping="Wrap"/>
+    </StackPanel>
+</Border>
+<Border Style="{DynamicResource GlassPanel}" Margin="0,20,0,0"><StackPanel><TextBlock Text="F95-Updates &amp; Medien" Style="{DynamicResource SectionTitle}" Margin="0,0,0,12"/><CheckBox x:Name="SettingsF95UpdatesCheckBox" Content="Automatisch nach neuen F95-Versionen suchen" Margin="0,0,0,12"/><CheckBox x:Name="SettingsF95NotificationsCheckBox" Content="Bei neuen Versionen benachrichtigen" Margin="0,0,0,12"/><CheckBox x:Name="SettingsF95GalleryCheckBox" Content="Fehlende F95-Galeriebilder automatisch herunterladen" Margin="0,0,0,16"/><DockPanel><TextBlock Text="Hover-Bildshow startet nach"/><TextBlock Text="{Binding Value, ElementName=SettingsHoverDelaySlider, StringFormat={}{0:0} Sekunden}" HorizontalAlignment="Right"/></DockPanel><Slider x:Name="SettingsHoverDelaySlider" Minimum="1" Maximum="15" Value="5" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0,10,0,16"/><DockPanel><TextBlock Text="Update-Prüfabstand"/><TextBlock Text="{Binding Value, ElementName=SettingsF95IntervalSlider, StringFormat={}{0:0} Stunden}" HorizontalAlignment="Right"/></DockPanel><Slider x:Name="SettingsF95IntervalSlider" Minimum="6" Maximum="24" Value="12" TickFrequency="6" IsSnapToTickEnabled="True" Margin="0,14,0,10"/><Button Content="Metadaten für alle Spiele aktualisieren" Click="RefreshAllMetadata_Click" HorizontalAlignment="Left" Margin="0,8,0,12"/><TextBlock Text="Die Prüfung nutzt den unabhängigen F95Checker-Cache. Dein F95-Konto und Passwort werden nicht benötigt." Style="{DynamicResource BodyText}" TextWrapping="Wrap"/></StackPanel></Border>
+<Border Style="{DynamicResource GlassPanel}" Margin="0,20,0,0"><StackPanel><TextBlock Text="Speicherorte" Style="{DynamicResource SectionTitle}" Margin="0,0,0,12"/><TextBlock Text="Archiv und Bibliothek" Style="{DynamicResource BodyText}" Margin="0,8,0,6"/><Grid Margin="0,0,0,12"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBox x:Name="SettingsArchivePathTextBox" IsReadOnly="True" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/><Button Grid.Column="1" Content="…" Click="SelectArchivePath_Click" ToolTip="Archiv und Bibliothek wählen" Margin="8,0,0,0"/></Grid><TextBlock Text="GameLibrary für verwaltete Spiele" Style="{DynamicResource BodyText}" Margin="0,8,0,6"/><Grid Margin="0,0,0,12"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBox x:Name="SettingsManagedGameFolderTextBox" IsReadOnly="True" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/><Button Grid.Column="1" Content="…" Click="SelectManagedGameFolder_Click" ToolTip="GameLibrary-Ordner wählen" Margin="8,0,0,0"/></Grid><CheckBox x:Name="SettingsManageGamesCheckBox" Content="Neue lokale Spiele automatisch in die GameLibrary verschieben" Margin="0,0,0,12"/><Button Content="Vorhandene lokale Spiele jetzt übernehmen …" Click="MoveExistingGames_Click" HorizontalAlignment="Left" Margin="0,0,0,16"/><TextBlock Text="Steam-, Epic-, Xbox- und Microsoft-Store-Spiele bleiben an ihrem vom Anbieter verwalteten Ort." Style="{DynamicResource BodyText}" TextWrapping="Wrap" Margin="0,0,0,12"/><TextBlock Text="Standardordner für Spielstände" Style="{DynamicResource BodyText}" Margin="0,8,0,6"/><Grid Margin="0,0,0,12"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBox x:Name="SettingsDefaultSaveFolderTextBox" IsReadOnly="True" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/><Button Grid.Column="1" Content="…" Click="SelectDefaultSaveFolder_Click" ToolTip="Standardordner für Spielstände wählen" Margin="8,0,0,0"/></Grid></StackPanel></Border>
+</StackPanel></ScrollViewer><Button Grid.Row="2" Content="Einstellungen speichern" Click="SaveSettingsButton_Click" Style="{DynamicResource PrimaryButton}" HorizontalAlignment="Right" Margin="0,18,0,0"/></Grid>
+<Grid x:Name="SetupWizardHost" Visibility="Collapsed">
+    <views:SetupWizardView x:Name="SetupWizard"/>
+</Grid>
+
+<Grid x:Name="ImportsView" Visibility="Collapsed">
+    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+    <TextBlock Text="Entdecken" Style="{StaticResource PageTitle}" Margin="0,0,0,20"/>
+    <WrapPanel Grid.Row="1" Margin="0,0,0,18">
+        <Button x:Name="DiscoverNowButton" Content="Jetzt suchen" Click="DiscoverNow_Click" Style="{StaticResource PrimaryButton}" Margin="0,0,10,8"/>
+        <Button x:Name="CancelScanButton" Content="Abbrechen" Click="CancelScan_Click" IsEnabled="False" Margin="0,0,10,8"/><Button Content="Ordner scannen" Click="ScanFolderButton_Click" Margin="0,0,10,8"/>
+        <Button Content="JSON importieren" Click="ImportJsonButton_Click" Margin="0,0,10,8"/>
+        <Button Content="Bibliothek exportieren" Click="ExportJson_Click" Margin="0,0,0,8"/>
+    </WrapPanel>
+    <TextBlock x:Name="DiscoveryStatusText" Grid.Row="2" Text="Noch kein Scan ausgeführt." Style="{StaticResource BodyText}" Margin="0,0,0,16" TextWrapping="Wrap"/>
+    <ScrollViewer Grid.Row="3">
+        <ItemsControl x:Name="ImportScanItemsControl">
+            <ItemsControl.ItemTemplate><DataTemplate>
+                <Border BorderBrush="{StaticResource BorderColor}" BorderThickness="0,0,0,1" Padding="0,15">
+                    <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="120"/></Grid.ColumnDefinitions>
+                        <StackPanel Margin="0,0,18,0">
+                            <TextBlock Text="{Binding Name}" FontSize="16" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="{Binding DetectionLabel}" Foreground="{StaticResource SuccessColor}" FontSize="11" Margin="0,5,0,5"/>
+                            <TextBlock Text="{Binding DisplayPath}" Style="{StaticResource BodyText}" FontSize="12" TextTrimming="CharacterEllipsis" ToolTip="{Binding DisplayPath}"/>
+                        </StackPanel>
+                        <Button Grid.Column="1" Content="{Binding ActionLabel}" Click="ImportScannedGame_Click" VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+            </DataTemplate></ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </ScrollViewer>
+</Grid>
+    </Grid>
+    <Border x:Name="FloatingBottomNav" HorizontalAlignment="Center" VerticalAlignment="Bottom"
+            Background="#181B20" BorderBrush="{DynamicResource BorderColor}" BorderThickness="1"
+            CornerRadius="22" Padding="6" Margin="0,0,0,24" Panel.ZIndex="50">
+        <StackPanel Orientation="Horizontal">
+            <RadioButton x:Name="NavHomeButton" Tag="Start" Click="NavHome_Click"
+                         Style="{StaticResource BottomNavigationButton}">
+                <TextBlock Text="&#xE80F;" FontFamily="Segoe Fluent Icons" FontSize="18" VerticalAlignment="Center"/>
+            </RadioButton>
+            <RadioButton x:Name="NavLibraryButton" Tag="Bibliothek" Click="NavLibrary_Click"
+                         Style="{StaticResource BottomNavigationButton}">
+                <TextBlock Text="&#xE8F1;" FontFamily="Segoe Fluent Icons" FontSize="18" VerticalAlignment="Center"/>
+            </RadioButton>
+            <RadioButton x:Name="NavAddGameButton" Tag="Hinzufügen" Click="NavAddGame_Click"
+                         Style="{StaticResource BottomNavigationButton}">
+                <TextBlock Text="&#xE710;" FontFamily="Segoe Fluent Icons" FontSize="18" VerticalAlignment="Center"
+                           Foreground="{DynamicResource AccentColor}"/>
+            </RadioButton>
+            <RadioButton x:Name="NavUpdatesButton" Tag="Updates" Click="NavUpdates_Click"
+                         Style="{StaticResource BottomNavigationButton}">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE895;" FontFamily="Segoe Fluent Icons" FontSize="18" VerticalAlignment="Center"/>
+                    <Border x:Name="NavUpdatesBadge" Background="{DynamicResource AccentColor}" CornerRadius="9"
+                            Margin="6,0,0,0" Padding="5,1" Visibility="Collapsed" VerticalAlignment="Center">
+                        <TextBlock x:Name="NavUpdatesBadgeText" Text="0" FontSize="10" Foreground="White"/>
+                    </Border>
+                </StackPanel>
+            </RadioButton>
+            <RadioButton x:Name="NavSettingsButton" Tag="Einstellungen" Click="NavSettings_Click"
+                         Style="{StaticResource BottomNavigationButton}">
+                <TextBlock Text="&#xE713;" FontFamily="Segoe Fluent Icons" FontSize="18" VerticalAlignment="Center"/>
+            </RadioButton>
+        </StackPanel>
+    </Border>
+    <Border x:Name="ToastHost" Visibility="Collapsed" HorizontalAlignment="Right" VerticalAlignment="Top"
+                    Background="{DynamicResource SurfaceSecondary}" BorderBrush="{DynamicResource BorderColor}" BorderThickness="1"
+                    CornerRadius="11" Padding="16,12" Panel.ZIndex="200" MaxWidth="430">
+                <TextBlock x:Name="ToastText" Text="" Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap"/>
+            </Border>
+
+    </Grid>
+    <Grid x:Name="DeleteGameDialog" Visibility="Collapsed" Panel.ZIndex="100" IsVisibleChanged="DialogVisibilityChanged" KeyboardNavigation.TabNavigation="Cycle">
+                <Border Background="#C80A0B0D"/>
+                <Border MaxWidth="620" Margin="12" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="28"
+                        Background="#111317" BorderBrush="{DynamicResource BorderColor}" BorderThickness="1" CornerRadius="24">
+                    <ScrollViewer><StackPanel>
+                        <Grid Margin="0,0,0,24">
+                            <StackPanel>
+                                <TextBlock Text="Installation entfernen" Style="{StaticResource PageTitle}"/><TextBlock x:Name="DeleteTargetText" TextWrapping="Wrap" Style="{StaticResource BodyText}" Margin="0,8,35,0"/><CheckBox x:Name="NoSaveConfirmCheckBox" Content="Es gibt keinen Spielstand zu sichern." Visibility="Collapsed" Margin="0,14,0,0"/>
+                                <TextBlock Text="Spielzeit und Historie bleiben erhalten." Style="{StaticResource BodyText}" Margin="0,5,0,0"/>
+                            </StackPanel>
+                            <Button Content="×" Click="CloseDeleteDialogButton_Click" Width="36" Height="36" HorizontalAlignment="Right" Background="Transparent" Foreground="{DynamicResource TextSecondary}" BorderThickness="0" FontSize="20"/>
+                        </Grid>
+                        <Button Height="Auto" MinHeight="80" Click="WaitingForUpdatesButton_Click" Background="Transparent" BorderThickness="0" Padding="0" HorizontalContentAlignment="Stretch" Margin="0,0,0,12">
+                            <Border Background="{DynamicResource SurfaceSecondary}" BorderBrush="{DynamicResource BorderColor}" BorderThickness="1" CornerRadius="16" Padding="18">
+                                <StackPanel>
+                                    <TextBlock Text="AUF UPDATES WARTEN" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}"/>
+                                    <TextBlock Text="Spielstand archivieren und Installation entfernen." FontSize="12" Foreground="{DynamicResource TextSecondary}" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Border>
+                        </Button>
+                        <Button Height="Auto" MinHeight="80" Click="FinishedGameButton_Click" Background="Transparent" BorderThickness="0" Padding="0" HorizontalContentAlignment="Stretch" Margin="0,0,0,12">
+                            <Border Background="{DynamicResource SurfaceSecondary}" BorderBrush="{DynamicResource BorderColor}" BorderThickness="1" CornerRadius="16" Padding="18">
+                                <StackPanel>
+                                    <TextBlock Text="ABSCHLIESSEN" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}"/>
+                                    <TextBlock Text="Spielstand archivieren, Installation entfernen und als abgeschlossen markieren." FontSize="12" Foreground="{DynamicResource TextSecondary}" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Border>
+                        </Button>
+                        <Button Height="Auto" MinHeight="80" Click="AbsoluteDeleteOption_Click" Background="Transparent" BorderThickness="0" Padding="0" HorizontalContentAlignment="Stretch">
+                            <Border Background="#2A1518" BorderBrush="{DynamicResource DangerColor}" BorderThickness="1" CornerRadius="16" Padding="18">
+                                <StackPanel>
+                                    <TextBlock Text="IN GELÖSCHT VERSCHIEBEN" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource DangerColor}"/>
+                                    <TextBlock Text="Installation und Save-Archiv entfernen; Quelle, Cover und Spielzeit als Eintrag behalten." FontSize="12" Foreground="{DynamicResource TextSecondary}" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </Border>
+                        </Button>
+                        <Button Content="Abbrechen" Click="CloseDeleteDialogButton_Click" Style="{StaticResource SecondaryButton}" Width="100" HorizontalAlignment="Right" Margin="0,20,0,0"/>
+                    </StackPanel></ScrollViewer>
+                </Border>
+            </Grid>
+
+            <Grid x:Name="DuplicateGameDialog" Visibility="Collapsed" Panel.ZIndex="90" IsVisibleChanged="DialogVisibilityChanged" KeyboardNavigation.TabNavigation="Cycle">
+                <Border Background="#C80A0B0D"/>
+                <Border MaxWidth="560" Margin="12" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="28"
+                        Background="#111317" BorderBrush="{DynamicResource BorderColor}" BorderThickness="1" CornerRadius="24">
+                    <ScrollViewer><StackPanel>
+                        <TextBlock Text="Spiel bereits vorhanden" Style="{StaticResource PageTitle}"/>
+                        <TextBlock x:Name="DuplicateGameText" Text="Dieses Spiel ist bereits in der Bibliothek." Style="{StaticResource BodyText}" TextWrapping="Wrap" Margin="0,10,0,24"/>
+                        <Button Content="Bestehendes Spiel öffnen" Click="DuplicateOpenExisting_Click" Style="{StaticResource PrimaryButton}" HorizontalAlignment="Stretch" Margin="0,0,0,10"/>
+                        <Button x:Name="DuplicateAddVersionButton" Content="Als neue Version hinzufügen" Click="DuplicateAddVersion_Click" Style="{StaticResource PrimaryButton}" HorizontalAlignment="Stretch" Margin="0,0,0,10"/>
+                        <Button Content="Abbrechen" Click="DuplicateCancel_Click" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Stretch"/>
+                    </StackPanel></ScrollViewer>
+                </Border>
+            </Grid>
+
+            <Grid x:Name="AbsoluteDeleteDialog" Visibility="Collapsed" Panel.ZIndex="110" IsVisibleChanged="DialogVisibilityChanged" KeyboardNavigation.TabNavigation="Cycle">
+                <Border Background="#C80A0B0D"/>
+                <Border MaxWidth="560" Margin="12" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="28"
+                        Background="#111317" BorderBrush="{DynamicResource DangerColor}" BorderThickness="1" CornerRadius="24">
+                    <ScrollViewer><StackPanel>
+                        <TextBlock x:Name="AbsoluteDeleteTitle" Text="In Gelöscht verschieben" Style="{StaticResource PageTitle}"/>
+                        <TextBlock x:Name="AbsoluteDeleteDescription" Text="Installation und Save-Archiv werden gelöscht. Der Spieleintrag wandert in die Bibliothek Gelöscht." Style="{StaticResource BodyText}" TextWrapping="Wrap" Margin="0,10,0,24"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button Content="Abbrechen" Click="CloseAbsoluteDeleteDialog_Click" Style="{StaticResource SecondaryButton}" Width="110" Margin="0,0,10,0"/>
+                            <Button x:Name="ConfirmAbsoluteDeleteButton" Content="In Gelöscht verschieben" Click="ConfirmAbsoluteDelete_Click" Style="{StaticResource DangerButton}" Padding="18,0"/>
+                        </StackPanel>
+                    </StackPanel></ScrollViewer>
+                </Border>
+            </Grid>
+
+            <Grid x:Name="SaveConflictDialog" Visibility="Collapsed" Panel.ZIndex="120" IsVisibleChanged="DialogVisibilityChanged" KeyboardNavigation.TabNavigation="Cycle">
+                <Border Background="#C80A0B0D"/>
+                <Border Width="560" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="28"
+                        Background="#111317" BorderBrush="{DynamicResource BorderColor}" BorderThickness="1" CornerRadius="24">
+                    <ScrollViewer><StackPanel>
+                        <TextBlock Text="Spielstände vorhanden" Style="{StaticResource PageTitle}"/>
+                        <TextBlock Text="Wie soll das Archiv wiederhergestellt werden? Der bisherige Zielordner bleibt als Sicherung neben dem Spielstandordner erhalten." Style="{StaticResource BodyText}" TextWrapping="Wrap" Margin="0,10,0,24"/>
+                        <Button Content="Ersetzen" Click="SaveConflictReplace_Click" Style="{StaticResource DangerButton}" HorizontalAlignment="Stretch" Margin="0,0,0,10"/>
+                        <Button Content="Zusammenführen" Click="SaveConflictMerge_Click" Style="{StaticResource PrimaryButton}" HorizontalAlignment="Stretch" Margin="0,0,0,10"/>
+                        <Button Content="Abbrechen" Click="SaveConflictCancel_Click" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Stretch"/>
+                    </StackPanel></ScrollViewer>
+                </Border>
+            </Grid>
+
+            <Grid x:Name="ReinstallChoiceDialog" Visibility="Collapsed" Panel.ZIndex="130" IsVisibleChanged="DialogVisibilityChanged" KeyboardNavigation.TabNavigation="Cycle"><Border Background="#BB0A0B0D"/><Border MaxWidth="640" Margin="16" HorizontalAlignment="Center" VerticalAlignment="Center" Background="#111317" BorderBrush="{DynamicResource BorderColor}" BorderThickness="1" CornerRadius="24" Padding="24"><ScrollViewer><StackPanel><TextBlock Text="Wie möchtest du weitermachen?" Style="{DynamicResource PageTitle}"/><TextBlock x:Name="ReinstallChoiceTitle" Style="{DynamicResource SectionTitle}" TextWrapping="Wrap" Margin="0,12,0,12"/><TextBlock x:Name="ReinstallSourceText" Style="{DynamicResource BodyText}" TextWrapping="Wrap" Margin="0,0,0,20"/><Button x:Name="SourceInstallButton" Content="Über die Quelle installieren ↗" Click="SourceInstall_Click" Height="48" Style="{DynamicResource PrimaryButton}" Margin="0,0,0,12"/><Button Content="Komprimierte Datei entpacken" Click="ExtractArchiveForReinstall_Click" Height="48" Margin="0,0,0,12"/><Button Content="Bereits installiert – Startdatei wählen" Click="LinkInstalled_Click" Height="48" Margin="0,0,0,12"/><Button Content="Abbrechen" Click="CloseReinstallChoice_Click"/></StackPanel></ScrollViewer></Border></Grid><Grid x:Name="SaveFinderDialog" Visibility="Collapsed" Panel.ZIndex="130" IsVisibleChanged="DialogVisibilityChanged" KeyboardNavigation.TabNavigation="Cycle"><Border Background="#BB0A0B0D"/><Border MaxWidth="640" Margin="16" HorizontalAlignment="Center" VerticalAlignment="Center" Background="#111317" BorderBrush="{DynamicResource BorderColor}" BorderThickness="1" CornerRadius="24" Padding="24"><ScrollViewer><StackPanel><TextBlock Text="Spielstände finden" Style="{DynamicResource PageTitle}"/><TextBlock x:Name="SaveFinderStatus" TextWrapping="Wrap" Style="{DynamicResource BodyText}" Margin="0,12,0,16"/><ItemsControl x:Name="SaveCandidates"><ItemsControl.ItemTemplate><DataTemplate><Button Click="ChooseSaveCandidate_Click" Height="Auto" MinHeight="70" Margin="0,0,0,10" HorizontalContentAlignment="Stretch"><StackPanel><TextBlock Text="{Binding Path}" TextWrapping="Wrap"/><TextBlock Text="{Binding Reason}" TextWrapping="Wrap" Style="{DynamicResource BodyText}" FontSize="12" Margin="0,6,0,0"/></StackPanel></Button></DataTemplate></ItemsControl.ItemTemplate></ItemsControl><Button Content="Schließen" Click="CloseSaveFinder_Click" HorizontalAlignment="Right"/></StackPanel></ScrollViewer></Border></Grid><Grid x:Name="BusyOverlay" IsVisibleChanged="DialogVisibilityChanged" Visibility="Collapsed" Background="#ED0B1320" Panel.ZIndex="500">
+        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Width="360">
+            <TextBlock x:Name="BusyText" Text="Dateien werden verarbeitet ..." TextWrapping="Wrap" Style="{StaticResource SectionTitle}" HorizontalAlignment="Center"/>
+            <ProgressBar Height="3" IsIndeterminate="True" Foreground="{StaticResource AccentColor}" Background="{StaticResource SurfaceSecondary}" Margin="0,20,0,0"/>
+        </StackPanel>
+    </Grid>
+ </Grid>
+</Window>

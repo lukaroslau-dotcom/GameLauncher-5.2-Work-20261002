@@ -1,0 +1,110 @@
+<UserControl x:Class="GameLauncher.Views.SetupWizardView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:GameLauncher.Controls">
+<Grid Margin="40,30">
+    <Grid.RowDefinitions>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="*"/>
+        <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+
+    <!-- Step 1: Welcome -->
+    <Grid x:Name="Step1_Welcome" Grid.Row="1" Visibility="Visible">
+        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="560">
+            <TextBlock Text="&#xE7FC;" FontFamily="Segoe Fluent Icons" Foreground="{DynamicResource AccentColor}" FontSize="48" HorizontalAlignment="Center" Margin="0,0,0,20"/>
+            <TextBlock Text="Willkommen bei GameLauncher" Style="{DynamicResource PageTitle}" HorizontalAlignment="Center" TextWrapping="Wrap"/>
+            <TextBlock Text="Deine persönliche Spielebibliothek. Alle Spiele an einem Ort – mit automatischer Erkennung und Update-Überwachung."
+                       Style="{DynamicResource BodyText}" TextWrapping="Wrap" TextAlignment="Center" Margin="0,12,0,30"/>
+            <Button Content="Los geht's" Click="Step1_Next_Click" Style="{DynamicResource PrimaryButton}" HorizontalAlignment="Center" Padding="40,0" Height="48"/>
+        </StackPanel>
+    </Grid>
+
+    <!-- Step 2: Folder Selection + Scan -->
+    <Grid x:Name="Step2_FolderScan" Grid.Row="1" Visibility="Collapsed">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="Schritt 1 von 2 · Spielordner auswählen" Style="{DynamicResource Eyebrow}" Margin="0,0,0,10"/>
+        <TextBlock Text="Wo liegen deine Spiele?" Style="{DynamicResource SectionTitle}" Margin="0,0,0,6"/>
+        <TextBlock Text="Wähle den Ordner, in dem deine Spielinstallationen liegen. Die App durchsucht ihn rekursiv nach ausführbaren Dateien."
+                   Style="{DynamicResource BodyText}" TextWrapping="Wrap" Margin="0,0,0,20"/>
+
+        <Border Style="{DynamicResource GlassPanel}" Margin="0,0,0,16">
+            <StackPanel>
+                <TextBlock Text="Spielordner" Style="{DynamicResource BodyText}" Margin="0,0,0,8"/>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="SetupFolderPathTextBox" IsReadOnly="True" ToolTip="Ordner wird beim Klick auf 'Durchsuchen' ausgewählt"/>
+                    <Button Grid.Column="1" Content="Durchsuchen" Click="BrowseFolder_Click" Style="{DynamicResource SecondaryButton}" Margin="10,0,0,0"/>
+                </Grid>
+                <TextBlock x:Name="SetupFolderPathError" Foreground="{DynamicResource DangerColor}" FontSize="12" TextWrapping="Wrap" Visibility="Collapsed" Margin="0,6,0,0"/>
+            </StackPanel>
+        </Border>
+
+        <Button x:Name="SetupScanButton" Content="Ordner durchsuchen" Click="ScanFolder_Click" Style="{DynamicResource PrimaryButton}" HorizontalAlignment="Left" Padding="24,0" Height="42" IsEnabled="False"/>
+
+        <TextBlock x:Name="SetupScanStatus" Grid.Row="3" Style="{DynamicResource BodyText}" Margin="0,14,0,0" TextWrapping="Wrap"/>
+
+        <Border x:Name="SetupResultsPanel" Grid.Row="4" Style="{DynamicResource GlassPanel}" Margin="0,16,0,0" Visibility="Collapsed">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <DockPanel Margin="0,0,0,12">
+                    <TextBlock x:Name="SetupResultsCount" DockPanel.Dock="Right" Style="{DynamicResource BodyText}" VerticalAlignment="Center"/>
+                    <TextBlock Text="Gefundene Spiele" Style="{DynamicResource SectionTitle}"/>
+                </DockPanel>
+                <ScrollViewer Grid.Row="1" MaxHeight="340">
+                    <ItemsControl x:Name="SetupResultsList">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderBrush="{DynamicResource BorderColor}" BorderThickness="0,0,0,1" Padding="0,10">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Margin="0,0,18,0">
+                                            <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding DetectionLabel}" Foreground="{DynamicResource SuccessColor}" FontSize="11" Margin="0,4,0,3"/>
+                                            <TextBlock Text="{Binding DisplayPath}" Style="{DynamicResource BodyText}" FontSize="12" TextTrimming="CharacterEllipsis" ToolTip="{Binding DisplayPath}"/>
+                                        </StackPanel>
+                                        <CheckBox Grid.Column="1" x:Name="SetupGameCheckBox" IsChecked="{Binding IsSelected}" VerticalAlignment="Center"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+        </Border>
+    </Grid>
+
+    <!-- Step 3: Confirmation -->
+    <Grid x:Name="Step3_Confirmation" Grid.Row="1" Visibility="Collapsed">
+        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="500">
+            <TextBlock Text="&#xE73E;" FontFamily="Segoe Fluent Icons" Foreground="{DynamicResource SuccessColor}" FontSize="48" HorizontalAlignment="Center" Margin="0,0,0,20"/>
+            <TextBlock Text="Alles bereit!" Style="{DynamicResource PageTitle}" HorizontalAlignment="Center"/>
+            <TextBlock x:Name="SetupSummaryText" Style="{DynamicResource BodyText}" TextWrapping="Wrap" TextAlignment="Center" Margin="0,12,0,30"/>
+            <Button Content="Bibliothek öffnen" Click="Step3_Finish_Click" Style="{DynamicResource PrimaryButton}" HorizontalAlignment="Center" Padding="40,0" Height="48"/>
+        </StackPanel>
+    </Grid>
+
+    <!-- Navigation -->
+    <DockPanel Grid.Row="2" Margin="0,20,0,0">
+        <Button x:Name="SetupBackButton" DockPanel.Dock="Left" Content="Zurück" Click="Back_Click" Style="{DynamicResource SecondaryButton}" Padding="20,0" Visibility="Collapsed"/>
+        <Button x:Name="SetupSkipButton" DockPanel.Dock="Right" Content="Überspringen" Click="Skip_Click" Style="{DynamicResource SecondaryButton}" Padding="20,0"/>
+        <Button x:Name="SetupImportButton" DockPanel.Dock="Right" Content="Spiele importieren" Click="Import_Click" Style="{DynamicResource PrimaryButton}" Padding="24,0" Margin="0,0,10,0" Visibility="Collapsed"/>
+    </DockPanel>
+</Grid>
+</UserControl>
