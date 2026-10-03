@@ -108,6 +108,12 @@ internal static class UiChecks
             var artwork=card==null?null:Descendant<GameLauncher.Controls.CroppedImage>(card);
             Check(artwork!=null&&Math.Abs(artwork.ActualHeight/artwork.ActualWidth-9d/16)<.03,"Game cards use landscape 16:9 artwork");
             Check(card != null, "Library contains a game card for size checks");
+            settingsService.Settings.ReduceMotion=false;Call("ApplyPresentation");
+            var wheel=new System.Windows.Input.MouseWheelEventArgs(System.Windows.Input.Mouse.PrimaryDevice,Environment.TickCount,-120) { RoutedEvent=UIElement.PreviewMouseWheelEvent,Source=card };
+            card!.RaiseEvent(wheel);
+            var scrollTimeout=System.Diagnostics.Stopwatch.StartNew();while(scrollTimeout.ElapsedMilliseconds<300){Pump();Thread.Sleep(10);}
+            Check(wheel.Handled&&virtualPanel!.VerticalOffset>0&&virtualPanel.VerticalOffset<=120,"Wheel scroll interpolates bounded pixel movement without losing virtualization");
+            virtualPanel.SetVerticalOffset(0);Pump();settingsService.Settings.ReduceMotion=true;Call("ApplyPresentation");
             var sizeText = (TextBlock)card!.FindName("InstalledSizeText");
             var originalContext = card.DataContext;
             string sizeFolder = Path.Combine(paths.ArchivePath, "SizeFixture");
@@ -135,9 +141,11 @@ internal static class UiChecks
             card.DataContext = originalContext;
             Call("LibrarySort_Click",Find<Button>("SortPlaytimeButton"),new RoutedEventArgs());
             Check(((Game)Find<ItemsControl>("LibraryItemsControl").Items[0]).Id == "ui-119","Playtime sort orders by real playtime");
+            var checkedGame=service.GetGames()[1]; checkedGame.LastUpdateCheckUtc=DateTime.UtcNow;
             var updateGame=service.GetGames()[0]; updateGame.InstallSource="https://f95zone.to/threads/test.230209/";
             updateGame.UpdateAvailable=true; updateGame.LatestKnownVersion="v2.0";
             Call("RefreshGameList"); Call("AvailableUpdatesNavigationButton_Click",window,new RoutedEventArgs()); Pump(); Shot("updates");
+            Check(Find<ItemsControl>("RecentlyUpdatedItemsControl").Items.Count == 1, "Recently checked list remains in the shared update flow");
             Check(Find<ItemsControl>("AvailableUpdatesItemsControl").Items.Count==1 &&
                 Find<Border>("NavUpdatesBadge").Visibility==Visibility.Visible,
                 "Available updates view and navigation badge reflect detected updates");
@@ -194,8 +202,50 @@ internal static class UiChecks
             Call("SettingsNavigationButton_Click",window,new RoutedEventArgs());
             settingsService.Settings.UiScale=2; Call("ApplyPresentation");
             Call("OpenAddGameButton_Click",window,new RoutedEventArgs()); Pump(); Shot("form-scale-200");
+            var originalFactory=CatalogProviders.Create;CatalogProviders.Create=()=>new UiCatalogProvider();Exception? catalogFailure=null;
+            window.Dispatcher.BeginInvoke(new Action(()=>
+            {
+                var catalog=app.Windows.Cast<Window>().Single(w=>w.Title=="Spiele nach Namen suchen");
+                try
+                {
+                    var box=Descendant<TextBox>(catalog)!;box.Text="Fixture";
+                    var panel=(DockPanel)catalog.Content;var top=(StackPanel)panel.Children[0];
+                    top.Children.OfType<Button>().First().RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                    Check(Descendant<ListBox>(catalog)!.Items.Count==1,"Catalog dialog connects search provider results without browser or credentials");
+                }
+                catch(Exception ex){catalogFailure=ex;}
+                finally{catalog.Close();}
+            }),DispatcherPriority.ApplicationIdle);
+            try{Call("SearchCatalog_Click",window,new RoutedEventArgs());if(catalogFailure!=null)throw catalogFailure;}
+            finally{CatalogProviders.Create=originalFactory;}
+            Check(window.IsVisible,"Closing search keeps launcher alive");
+            Call("OpenDiagnostics_Click",window,new RoutedEventArgs()); Pump();
+            var diagnostics=app.Windows.Cast<Window>().Single(w=>w!=window&&w.Title=="Diagnoseprotokolle");
+            Check(diagnostics.Owner==window,"Diagnostics is an owned independent window");diagnostics.Close();Pump();
+            Check(window.IsVisible&&!window.Dispatcher.HasShutdownStarted,"Closing diagnostics keeps launcher alive");
+            if(service.GetGames().Any(g=>File.Exists(g.CoverPath)))
+            {
+                Call("ShowGameDetails",service.GetGames().First(g=>File.Exists(g.CoverPath)));Call("OpenGallery_Click",window,new RoutedEventArgs());Pump();
+                var gallery=app.Windows.Cast<Window>().OfType<GameLauncher.Views.GalleryWindow>().Single();
+                Check(gallery.Owner==window&&gallery.IsVisible,"Gallery opens as an owned zoomable image window");gallery.Close();Pump();
+                Check(window.IsVisible&&!window.Dispatcher.HasShutdownStarted,"Closing gallery keeps launcher alive");
+            }
+            Call("OpenAddGameButton_Click",window,new RoutedEventArgs());
+            Find<TextBox>("GameNameTextBox").Text="Only a wish";Find<TextBox>("GameVersionTextBox").Clear();Find<TextBox>("InstallSourceTextBox").Clear();
+            Call("WishlistButton_Click",window,new RoutedEventArgs());Pump();
+            Check(service.GetGames().Count(g=>g.Name=="Only a wish"&&g.Status==GameLauncher.Constants.GameStatus.Wishlist)==1,"Wishlist accepts a title without paths, source or version");
+            Call("WishlistNavigation_Click",window,new RoutedEventArgs());Pump();
+            Check(Find<ItemsControl>("LibraryItemsControl").Items.Cast<Game>().All(g=>g.Status==GameLauncher.Constants.GameStatus.Wishlist),"Direct wishlist navigation filters the library");
+            Call("AvailableUpdatesNavigationButton_Click",window,new RoutedEventArgs());Pump();
+            Check(Find<ScrollViewer>("UpdatesScroll").Content is StackPanel,"Update lists share one natural document scroll flow");
             Console.WriteLine("UI screenshots: " + paths.ArchivePath);
         }
         finally { typeof(MainWindow).GetField("forceExit",flags)!.SetValue(window,true); window.Close(); app.Shutdown(); }
     }
+}
+
+internal sealed class UiCatalogProvider : IGameCatalogProvider
+{
+    public string Id=>"ui-fixture";
+    public Task<IReadOnlyList<CatalogResult>> SearchAsync(string query,CancellationToken cancellation)=>Task.FromResult<IReadOnlyList<CatalogResult>>(new[]{new CatalogResult("42","Fixture","Studio","https://f95zone.to/threads/42/")});
 }

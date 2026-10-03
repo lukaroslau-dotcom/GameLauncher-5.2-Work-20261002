@@ -12,6 +12,10 @@ namespace GameLauncher.models
         public string LaunchArguments { get; set; } = "";
         public List<string> Aliases { get; set; } = new();
         public List<string> Tags { get; set; } = new();
+        public string Description { get; set; } = "";
+        public string Engine { get; set; } = "";
+        public DateTime? MetadataUpdatedUtc { get; set; }
+        public DateTime? SearchIntentUtc { get; set; }
         private string id = "";
         private string name = "";
         private double coverFocusX=.5, coverFocusY=.5;

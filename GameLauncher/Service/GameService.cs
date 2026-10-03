@@ -450,6 +450,7 @@ namespace GameLauncher.Service
             if (game.Id.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 || game.Id is "." or ".." ||
                 game.Id.EndsWith('.') || game.Id.EndsWith(' ')) throw new JsonException("Invalid game ID.");
             game.Notes ??= "";
+            game.Description ??= ""; game.Engine ??= "";
             game.VersionInfo ??= "";
             game.Name ??= "";
             game.CoverPath ??= "";

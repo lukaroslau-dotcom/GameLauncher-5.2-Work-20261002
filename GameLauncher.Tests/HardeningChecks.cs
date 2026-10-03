@@ -93,6 +93,11 @@ internal static class HardeningChecks
         LibraryPackage.Export(service, package);
         using (var zip = ZipFile.OpenRead(package))
             check(zip.GetEntry("export-manifest.json") != null && zip.Entries.Any(e => e.FullName.StartsWith("SaveArchive/")) && !zip.Entries.Any(e => e.FullName.StartsWith("Downloads/")), "Verified library package contains manifest and save backups, excludes downloads");
+        string importedRoot=LibraryPackageImport.ImportToNewFolder(package,Path.Combine(scope,"PackageImport"));
+        var packagePaths=new AppPaths(importedRoot);var packageGames=new GameService(packagePaths);
+        check(packageGames.GetGames().Count==service.GetGames().Count&&File.Exists(Path.Combine(importedRoot,"original-games.json")),"Library package imports into a new verified copy and preserves original JSON");
+        var packageSettings=new SettingsService(packagePaths);packageSettings.LoadAndResolvePaths();
+        check(!packageSettings.Settings.AutoDiscoveryEnabled&&!packageSettings.Settings.F95UpdateChecksEnabled&&!packageSettings.Settings.StartWithWindows&&File.Exists(Path.Combine(importedRoot,"imported-settings.json")),"Package import preserves source settings without activating machine or network authority");
         bool packageExisting = false, packageCancelled = false;
         try { LibraryPackage.Export(service, package); } catch (IOException) { packageExisting = true; }
         using var cancelled = new CancellationTokenSource(); cancelled.Cancel();

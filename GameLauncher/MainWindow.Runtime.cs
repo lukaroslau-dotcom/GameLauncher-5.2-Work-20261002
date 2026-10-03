@@ -277,7 +277,8 @@ public partial class MainWindow
             knownArchivePaths.UnionWith(archivePaths);
             detectedGames.Clear();
             detectedGames.AddRange(found.Where(g => g.IsArchive || gameService.FindExecutable(g.ExecutablePath)?.IsInstalled != true));
-            int added = 0;
+            int added = AutoAssociateDetected(found);
+            detectedGames.RemoveAll(g => !g.IsArchive && gameService.FindExecutable(g.ExecutablePath)?.IsInstalled == true);
             if (settingsService.Settings.AutoAddDetectedGames)
             {
                 foreach (var game in detectedGames.Where(g => !g.IsArchive && g.Confidence >= 90).ToList())
@@ -317,6 +318,17 @@ public partial class MainWindow
                 InstallVersionTextBox.Text = scanned.Version;
             }
             return false;
+        }
+        var ranked = SmartAssociation.Rank(gameService.GetGames(), scanned);
+        if (ranked.Count > 0)
+        {
+            if (!feedback) return false;
+            var match = ranked[0];
+            if (System.Windows.MessageBox.Show(match.Reason + "\n\nMit " + match.Game.Name + " verbinden?", "Zuordnung prüfen", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+            {
+                if (match.Game.IsInstalled) { ShowReinstallForm(match.Game); PrefillReinstall(scanned.ExecutablePath); return false; }
+                if (SmartAssociation.Link(gameService, match, scanned)) { RefreshGameList(); return true; }
+            }
         }
         var game = new Game
         {

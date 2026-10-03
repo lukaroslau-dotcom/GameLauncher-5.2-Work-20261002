@@ -46,6 +46,15 @@ public partial class MainWindow
                 })
                 { route.Open(); await Task.Delay(200); Check(route.Page.IsVisible, "Navigation: " + route.Name); Shot(route.Name); }
                 HomeNavigationButton_Click(this, new RoutedEventArgs());
+                OpenDiagnosticsWindow(); await Task.Delay(150);
+                var diagnostics=System.Windows.Application.Current.Windows.Cast<Window>().Single(w=>w.Owner==this&&w.Title=="Diagnoseprotokolle");diagnostics.Close();
+                Check(IsVisible&&!Dispatcher.HasShutdownStarted,"Closing diagnostics keeps published launcher alive");
+                var mediaFixture=new Game {Id="media-smoke",Name="Galerieprüfung",CoverPath=Path.Combine(root,"home.png"),GalleryPaths=new(){Path.Combine(root,"library.png")}};
+                ShowGameDetails(mediaFixture);OpenGallery(mediaFixture.CoverPath);await Task.Delay(350);
+                var gallery=System.Windows.Application.Current.Windows.OfType<Views.GalleryWindow>().Single();
+                Check(gallery.IsVisible&&gallery.Owner==this,"Published image gallery opens");gallery.Close();
+                Check(IsVisible&&!Dispatcher.HasShutdownStarted,"Closing gallery keeps published launcher alive");
+                HomeNavigationButton_Click(this,new RoutedEventArgs());
                 metrics["startupIdle"] = await SampleProcess();
                 await Task.Delay(5000);
                 metrics["settledIdle"] = await SampleProcess();

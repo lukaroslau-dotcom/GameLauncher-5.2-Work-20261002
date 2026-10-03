@@ -182,6 +182,9 @@ public partial class MainWindow
         var extracted=await ExtractGameArchiveAsync(archive);
         if(extracted.Result?.Success!=true||extracted.Game==null)return;
 
+        var matches = SmartAssociation.Rank(gameService.GetGames(), extracted.Game);
+        if (matches.Count > 0 && matches[0].CanAutoLink && matches.Count(m => m.Score == matches[0].Score) == 1 && SmartAssociation.Link(gameService, matches[0], extracted.Game))
+        { RefreshGameList(); ShowGameDetails(matches[0].Game); ShowToast("Archiv mit gemerktem Spiel verbunden. Metadaten und ID bleiben erhalten."); return; }
         Game? existing=FindLikelyGame(extracted.Game.Name);
         if(existing!=null && System.Windows.MessageBox.Show($"{existing.Name} ist bereits in deiner Bibliothek. Soll die neue Installation als Update eingebunden werden?",
             "Update erkannt",MessageBoxButton.YesNo,MessageBoxImage.Question)==MessageBoxResult.Yes)

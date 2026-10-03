@@ -1,0 +1,98 @@
+[
+  {
+    "run": 1,
+    "root": "C:\\Users\\shamr\\AppData\\Local\\Temp\\GameLauncher.52.Start-d644aa2795ad4f7aae826266c43c4d3f",
+    "exitCode": 0,
+    "result": {
+      "passed": true,
+      "checks": [
+        "Native WPF window rendered",
+        "Navigation: home",
+        "Navigation: library",
+        "Navigation: settings",
+        "Navigation: backups",
+        "Navigation: downloads",
+        "Navigation: add",
+        "Closing diagnostics keeps published launcher alive",
+        "Published image gallery opens",
+        "Closing gallery keeps published launcher alive",
+        "Game child tracked after parent exits",
+        "Gaming quiet mode hides UI and pauses background work",
+        "Game end restores launcher",
+        "Game time accounted once through child session"
+      ],
+      "metrics": {
+        "startupIdle": {
+          "elapsedSeconds": 3.0344196,
+          "cpuPercentOfOneCore": 78.78298727094315,
+          "workingSetBytes": 187772928,
+          "privateBytes": 144715776,
+          "logicalProcessors": 4
+        },
+        "settledIdle": {
+          "elapsedSeconds": 3.0106001,
+          "cpuPercentOfOneCore": 0.5189966215894157,
+          "workingSetBytes": 182149120,
+          "privateBytes": 139153408,
+          "logicalProcessors": 4
+        },
+        "gamingQuiet": {
+          "elapsedSeconds": 3.0139027,
+          "cpuPercentOfOneCore": 8.294852131818473,
+          "workingSetBytes": 210112512,
+          "privateBytes": 156499968,
+          "logicalProcessors": 4
+        },
+        "playtimeSeconds": 15.4006531
+      }
+    }
+  },
+  {
+    "run": 2,
+    "root": "C:\\Users\\shamr\\AppData\\Local\\Temp\\GameLauncher.52.Start-5696239ede4d47e3940a37d3bedf7d98",
+    "exitCode": 0,
+    "result": {
+      "passed": true,
+      "checks": [
+        "Native WPF window rendered",
+        "Navigation: home",
+        "Navigation: library",
+        "Navigation: settings",
+        "Navigation: backups",
+        "Navigation: downloads",
+        "Navigation: add",
+        "Closing diagnostics keeps published launcher alive",
+        "Published image gallery opens",
+        "Closing gallery keeps published launcher alive",
+        "Game child tracked after parent exits",
+        "Gaming quiet mode hides UI and pauses background work",
+        "Game end restores launcher",
+        "Game time accounted once through child session"
+      ],
+      "metrics": {
+        "startupIdle": {
+          "elapsedSeconds": 3.007151,
+          "cpuPercentOfOneCore": 76.89947949444205,
+          "workingSetBytes": 179073024,
+          "privateBytes": 139845632,
+          "logicalProcessors": 4
+        },
+        "settledIdle": {
+          "elapsedSeconds": 3.0185804,
+          "cpuPercentOfOneCore": 0,
+          "workingSetBytes": 173268992,
+          "privateBytes": 134180864,
+          "logicalProcessors": 4
+        },
+        "gamingQuiet": {
+          "elapsedSeconds": 3.0146977,
+          "cpuPercentOfOneCore": 7.256086687464243,
+          "workingSetBytes": 201244672,
+          "privateBytes": 152248320,
+          "logicalProcessors": 4
+        },
+        "playtimeSeconds": 16.1696542
+      }
+    }
+  }
+]

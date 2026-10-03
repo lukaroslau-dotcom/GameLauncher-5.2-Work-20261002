@@ -11,6 +11,7 @@ using System.Net.WebSockets;
 using System.Security.Cryptography;
 using System.Diagnostics;
 
+if (args.Length == 2 && args[0] == "--catalog-online-check") { using var provider = new F95CatalogProvider(); using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(25)); var result = await provider.SearchAsync(args[1], timeout.Token); Console.WriteLine(JsonSerializer.Serialize(new { passed = true, count = result.Count, provider = provider.Id, at = DateTime.UtcNow })); return; }
 if (args.Length == 2 && args[0] == "--migration-check") { MigrationChecks.Run(args[1]); return; }
 if (args.Contains("--ui-test")) { try { UiChecks.Run(); } catch(Exception ex) { Console.Error.WriteLine(ex); Environment.ExitCode=1; } return; }
 if(args.Length==2&&args[0]=="--gif-check")
@@ -364,6 +365,7 @@ using(var remoteHost=new RemoteHostService())
 }
 HardeningChecks.Run(root, Check);
 await DownloadChecks.Run(root, Check);
+await CatalogChecks.Run(root, Check);
 Console.WriteLine($"All {passed} checks passed. Fixtures: {root}");
 
 if (args.Length == 2 && args[0] == "--process-test")

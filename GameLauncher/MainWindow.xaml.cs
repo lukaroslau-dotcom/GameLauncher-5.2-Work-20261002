@@ -102,6 +102,7 @@ namespace GameLauncher
             }
             searchDelay.Tick += (_,_)=>{searchDelay.Stop();ApplySearch();};
             InitializeSmoke();
+            Controls.SmoothScroll.Attach(this);
             Loaded += MainWindow_Loaded;
             SizeChanged += (_, _) => UpdateCompactLayout();
 
@@ -347,7 +348,7 @@ namespace GameLauncher
             {
                 game.F95ThreadId = pendingF95Metadata.ThreadId;
                 game.LatestKnownVersion = pendingF95Metadata.Version;
-                game.F95Developer = pendingF95Metadata.Developer;
+                MetadataEnrichment.Apply(game, pendingF95Metadata);
                 game.F95Status = pendingF95Metadata.Status;
                 game.UpdateAvailable = F95UpdateService.IsUpdateAvailable(game.GameVersion, game.LatestKnownVersion, game.IgnoredUpdateVersion);
                 TrackUserEdits(game, pendingF95Metadata);
@@ -375,7 +376,9 @@ namespace GameLauncher
         private async void WishlistButton_Click(object sender, RoutedEventArgs e)
         {
             await EnsureF95MetadataForSaveAsync();
-            if (!ValidateGameForm(false)) { ShowToast("Bitte Name, Version und Quelle ausfüllen."); return; }
+            if (string.IsNullOrWhiteSpace(GameNameTextBox.Text)) { MarkInvalid(GameNameTextBox); ShowToast("Bitte einen Namen für die Wunschliste eingeben."); return; }
+            var duplicateWish = gameService.GetGames().FirstOrDefault(g => (F95UpdateService.TryExtractThreadId(InstallSourceTextBox.Text, out var id) && g.F95ThreadId == id) || (g.Status == GameStatus.Wishlist && g.Name.Equals(GameNameTextBox.Text.Trim(), StringComparison.OrdinalIgnoreCase)));
+            if (duplicateWish != null) { ShowGameDetails(duplicateWish); ShowToast("Dieses Spiel ist bereits gemerkt."); return; }
             Game game = new Game
             {
                 Id = Guid.NewGuid().ToString(),
@@ -390,7 +393,7 @@ namespace GameLauncher
                 CoverFocusX = GameCoverImage.FocusX, CoverFocusY = GameCoverImage.FocusY,
                 GamePath = "", ExecutablePath = "", SavePath = "",
                 IsInstalled = false, IsFavorite = GameFavoriteCheckBox.IsChecked == true,
-                Status = GameStatus.Wishlist, AddedDate = DateTime.Now
+                Status = GameStatus.Wishlist, AddedDate = DateTime.Now, SearchIntentUtc = DateTime.UtcNow
             };
             if (pendingF95Metadata != null &&
                 F95UpdateService.TryExtractThreadId(game.InstallSource, out string f95ThreadId) &&
@@ -398,7 +401,7 @@ namespace GameLauncher
             {
                 game.F95ThreadId = pendingF95Metadata.ThreadId;
                 game.LatestKnownVersion = pendingF95Metadata.Version;
-                game.F95Developer = pendingF95Metadata.Developer;
+                MetadataEnrichment.Apply(game, pendingF95Metadata);
                 game.F95Status = pendingF95Metadata.Status;
                 game.UpdateAvailable = F95UpdateService.IsUpdateAvailable(game.GameVersion, game.LatestKnownVersion, game.IgnoredUpdateVersion);
                 TrackUserEdits(game, pendingF95Metadata);
@@ -550,7 +553,7 @@ namespace GameLauncher
             {
                 game.F95ThreadId = pendingF95Metadata.ThreadId;
                 game.LatestKnownVersion = pendingF95Metadata.Version;
-                game.F95Developer = pendingF95Metadata.Developer;
+                MetadataEnrichment.Apply(game, pendingF95Metadata);
                 game.F95Status = pendingF95Metadata.Status;
                 game.UpdateAvailable = F95UpdateService.IsUpdateAvailable(game.GameVersion, game.LatestKnownVersion, game.IgnoredUpdateVersion);
                 TrackUserEdits(game, pendingF95Metadata);
@@ -771,7 +774,7 @@ namespace GameLauncher
             {
                 editingGame.F95ThreadId = pendingF95Metadata.ThreadId;
                 editingGame.LatestKnownVersion = pendingF95Metadata.Version;
-                editingGame.F95Developer = pendingF95Metadata.Developer;
+                MetadataEnrichment.Apply(editingGame, pendingF95Metadata);
                 editingGame.F95Status = pendingF95Metadata.Status;
                 editingGame.UpdateAvailable = F95UpdateService.IsUpdateAvailable(editingGame.GameVersion, editingGame.LatestKnownVersion, editingGame.IgnoredUpdateVersion);
                 TrackUserEdits(editingGame, pendingF95Metadata);
@@ -860,7 +863,7 @@ namespace GameLauncher
             GameDetailGalleryItems.ItemsSource=gallery;
             GameDetailGalleryCount.Text=gallery.Count==1?"1 Bild":gallery.Count+" Bilder";
             GameDetailGallerySection.Visibility=gallery.Count>0?Visibility.Visible:Visibility.Collapsed;
-            GameDetailNotesText.Text = string.IsNullOrWhiteSpace(game.Notes) ? "Keine Notizen." : game.Notes;
+            GameDetailNotesText.Text = string.Join("\n\n", new[] { game.Description, game.Notes }.Where(s => !string.IsNullOrWhiteSpace(s)));
             GameDetailVersionInfoText.Text = string.IsNullOrWhiteSpace(game.VersionInfo) ? "Keine zusätzlichen Angaben." : game.VersionInfo;
             UpdateMoreTextButton(GameDetailNotesText, GameDetailNotesMoreButton);
             UpdateMoreTextButton(GameDetailVersionInfoText, GameDetailVersionInfoMoreButton);
@@ -875,6 +878,8 @@ namespace GameLauncher
             {
                 string.IsNullOrWhiteSpace(game.F95Developer) ? "" : "Entwickler: " + game.F95Developer,
                 string.IsNullOrWhiteSpace(game.F95Status) ? "" : "F95-Status: " + game.F95Status,
+                game.Tags.Count == 0 ? "" : "Tags: " + string.Join(", ", game.Tags),
+                string.IsNullOrWhiteSpace(game.Engine) ? "" : "Engine: " + game.Engine,
                 string.IsNullOrWhiteSpace(game.LatestKnownVersion) ? "" : "Online: " + game.LatestKnownVersion
             }.Where(x => x.Length > 0));
             GameDetailF95MetaTextBlock.Text = f95Meta;
@@ -1550,7 +1555,7 @@ namespace GameLauncher
                     var metadata = await f95UpdateService.FetchMetadataAsync(game.InstallSource, CancellationToken.None);
                     if (metadata == null) continue;
                     game.LatestKnownVersion = metadata.Version;
-                    game.F95Developer = metadata.Developer;
+                    MetadataEnrichment.Apply(game, metadata);
                     game.F95Status = metadata.Status;
                     game.UpdateAvailable = F95UpdateService.IsUpdateAvailable(game.GameVersion, game.LatestKnownVersion, game.IgnoredUpdateVersion);
                     updated++;

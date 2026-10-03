@@ -28,3 +28,18 @@ Reale große HTTPS-Transfers und unterbrochene Netzwerkverbindungen; eigene RAR/
 Frühere behobene Fehlläufe bleiben im lokalen evidence-Verzeichnis: Compilerfehler während Integration, UI-Erwartung zum deaktivierten Provider und zu großzügige Fuzzy-Suche. Ein älterer 116er-Lauf gilt nicht für die aktuellen Änderungen; maßgeblich ist final-regression-process.txt.
 
 Finaler Build nach reinem Whitespace-Cleanup: `dotnet build GameLauncher/GameLauncher.csproj -c Release`, Exit 0, 0 Warnungen/0 Fehler. `git diff --cached --check` ohne Befund. Keine funktionalen Änderungen nach den oben protokollierten Tests.
+
+## Finale Revision: Smart Catalog / Medien / Paketimport
+
+Die vorstehenden Ergebnisse dokumentieren den früheren Kandidaten b5ed80f. Für die aktuelle Revision sind die folgenden erneut ausgeführten Gates und `docs/verification/revision-*` maßgeblich:
+
+- `dotnet run --project GameLauncher.Tests -c Release -- --process-test "C:\Users\shamr\Documents\GameLauncher-5.2-Work-20261002\GameLauncher.TestGame\bin\Release\net10.0-windows\GameLauncher.TestGame.exe"`: 133 Kernchecks + sieben Prozesschecks, Exit 0.
+- `dotnet run --project GameLauncher.Tests -c Release -- --ui-test --data-root <neuer Tempordner> --fixture-covers <evidence/ui-covers>`: 59 Checks, Exit 0. Enthält simuliertes Mausrad, Katalogdialog, Wunschliste ohne Quelle/Version, Galerie/Diagnose und gemeinsames Updatescrollen.
+- `dotnet run --project GameLauncher.Tests -c Release -- --catalog-online-check <Suchname>`: echter F95CatalogProvider/öffentlicher HTTP-Client, 23 Treffer ohne Anmeldung. Keine Account-/Downloadlinkprüfung.
+- `dotnet publish GameLauncher/GameLauncher.csproj -c Release -r win-x64 --self-contained true -o artifacts/GameLauncher-5.2-smart-candidate`: Exit 0.
+- `./scripts/Test-Published.ps1 -Package ./artifacts/GameLauncher-5.2-smart-candidate`: zwei tatsächliche EXE-Starts, je 14 Checks, beide Exit 0. Neu ausdrücklich Galerie und Diagnose schließen, Hauptfenster bleibt offen.
+- 58 Originalquelldateien erneut gegen SOURCE-MANIFEST.json identisch.
+
+Neue Messung: Lauf 1 settledIdle 0,519 % eines Kerns, Working Set 182149120 Bytes, Private 139153408 Bytes; Gaming 8,295 %, 210112512 / 156499968 Bytes. Lauf 2 settledIdle 0 %, 173268992 / 134180864 Bytes; Gaming 7,256 %, 201244672 / 152248320 Bytes. Drei Sekunden Messfenster, vier logische CPUs. Spielzeit 15,401 / 16,170 Sekunden. Kein Langzeitbenchmark; Galerieprüfung verändert den Speicherverlauf. Frühere schwankende Werte werden nicht unterschlagen.
+
+Paketimport ist inzwischen mit isoliertem Manifest-/Hash-/Settings-Test abgedeckt; die frühere Aussage „Paketimport nicht ausgeführt“ gilt für b5ed80f. Alle anderen oben genannten nicht ausgeführten Gates bleiben offen. Ein Dialog-Ressourcenpfad scheiterte zwischenzeitlich im UI-Test; absolute Component-URI korrigiert, finale UI- und EXE-Gates danach bestanden.

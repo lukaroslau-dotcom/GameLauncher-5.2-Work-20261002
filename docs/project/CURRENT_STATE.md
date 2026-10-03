@@ -1,23 +1,11 @@
-# Aktueller Stand – 2026-10-03
+# Entwicklungsstand 2026-10-03: Smart-Catalog-Integrationskandidat
 
-Arbeitskopie: `C:\Users\shamr\Documents\GameLauncher-5.2-Work-20261002`, Branch `codex/5.2-integration`, Originalsnapshot `6e9d17d`. Der Integrationscommit ist über die letzte AI_CHANGELOG-Überschrift auffindbar. Originalquellen erneut SHA-geprüft: 58/58 unverändert. Die echte games.json wurde für einen Migrationstest nur gelesen und byteidentisch nach Temp kopiert; ihr Hash blieb unverändert.
+Revision auf b5ed80f; Commitbetreff `feat: add smart catalog matching and media workflows`. Separate WPF/.NET-10-Kopie, Original und V7 unverändert.
 
-## Implementiert und verbunden
+Umgesetzt: direkt erreichbare Wunschliste nur mit Namen; öffentlicher F95-Namenskatalog mit Offlinecache und verbundenem optionalen Account-Provider-Vertrag; gewählte Treffer merken; exakte Zuordnung neuer stabiler EXEs und fertig entpackter Archive ohne Verlust der ID/Metadaten. Entwickler, Tags, Beschreibung und Engine werden ergänzt, manuell markierte Felder geschützt. Galerie mit Zoom/Pfeilen/Maximieren und unabhängigem Schließen. Diagnose als eigenes Fenster. Animiertes Pixelscrollen mit Reduced Motion. Beide Update-Listen teilen einen durchgängigen Scrollbereich. Paketimport prüft Hashmanifest und erstellt eine neue Datenkopie.
 
-WPF/.NET 10 erhalten; Next als Referenz. Isolierter Standarddatenordner und getrennte Autostart-/Shortcutnamen. Statusänderungen erhalten Installation/Saves. SHA-256-Backups, aktuelle plus eine History, ältere in Retired; manuell/vor/nach Spiel/Intervall; sicherer Restore in neuen Ordner. Installationsentfernung mit Receipt und verifizierter Wiederherstellung. HTTPS-Downloads mit persistierten Jobs, Pause/Resume/Abbruch/Hash; managed und abbrechbare Archive, Originale erhalten. ID-bewahrender Installationsverlauf und explizite Versionsauswahl. Settingsimport mit Hash/Snapshot und erhaltener lokaler Autorität. Bibliotheks-ZIP-Export mit Byteprüfung und Abbruch. Lokale Aliase/Tags/Tippfehler, Wishlist, größere Hero-/Coverdarstellung, maximal fünf 16:9-Karten, violettes Dark-Theme, verbundene Downloads/Backups und korrigierte untere Navigation.
+Bestanden am finalen funktionalen Stand: 133 Kernchecks + sieben echte Prozesschecks; 59 WPF-UI-Checks; self-contained Publish; zwei echte EXE-Starts mit je 14 Checks einschließlich Diagnose-/Galerieschließen. Live-Namenssuche mit App-HTTP-Client: 23 Treffer ohne Login. 58 Originalquellen erneut unverändert. Rohbelege unter docs/verification/revision-*. Keine Produktänderung nach diesen Tests; Dokumentations-/Paketarbeiten separat.
 
-## Tatsächliche finale Prüfläufe
+Neue Kurzzeitmessung: settledIdle 0,52 % / 0 % eines Kerns; Spielmodus 8,29 % / 7,26 %. Nur drei Sekunden je Fenster, vier logische CPUs. Kein genereller Performancegewinn und keine Langzeitabnahme abgeleitet. Die zusätzliche Galerieprüfung verändert den Speicherverlauf gegenüber dem früheren Kandidaten.
 
-- 120 Kernchecks + 7 echte Prozesschecks bestanden, Exit 0.
-- 48 programmgesteuerte WPF-Checks bestanden, Exit 0; Screenshots erzeugt. 1000/1366 Layouts sowie geometrische DPI-/Monitorchecks, keine manuelle Mehrmonitorbehauptung.
-- Migration einer echten JSON-Kopie: 42 übernommen, Wiederimport 0 neu, 0 übersprungen, Original unverändert. 18 Installationspfade fehlen; keine Spiele aus dieser Bibliothek gestartet.
-- Vollständiger self-contained win-x64-Publish. Zweimal veröffentlichte EXE: sechs Seiten, Kindprozess, Spielmodus, Rückkehr und Spielzeit bestanden, Exit 0.
-- Ressourcen gemessen (4 logische CPUs): nach kurzer Ruhephase 9,35/47,24 % eines Kerns; Spielmodus 2,60/2,08 %. Private RAM im Spielmodus 81,67/93,25 MiB. Kein Nullverbrauch, keine Performancefreigabe.
-
-Belege: docs/verification und TESTING.md. Paket: artifacts/GameLauncher-5.2-candidate. Testdaten ausschließlich Temp/evidence. Aktuelle Funktionsmatrix: FEATURE_MATRIX.md.
-
-## Offen / keine Releasefreigabe
-
-Der Handoff-Gesamtauftrag ist noch nicht vollständig erfüllt. Fehlend sind insbesondere austauschbare Online-Suchprovider mit Offlinecache, Mehrsignal-Downloadzuordnung, Publisher-Feedpipeline, vollständig journalisierte Updates/Moves, Paketimport, konfigurierbare Homebereiche und eine vollständige Original-Funktionsabnahme. Der variable Idleverbrauch erfordert Profiling. Native interaktive UI-Steuerung ist hier nicht verfügbar; Picker/Drag-drop/Autostart/LAN/echte Mehrmonitore sind ungetestet. Ebenso offen: große reale Netztransfers, RAR/7z-Formatfixtures, Crash-/Sperren-/Datenträgervollmatrix. Diese Grenzen sind keine bestandenen Gates und werden nicht durch Build/Unit-Tests ersetzt.
-
-Keine Originaldaten automatisch migriert, keine Veröffentlichung/kein GitHub-Push, kein signierter Installer. Die aktuell ausführbare Ausgabe ist ausdrücklich ein Testkandidat.
+Offen: regulärer Login-/2FA-Adapter und authentifizierter Linkresolver; native manuelle Desktopabnahme; große reale Download-/Watcher-/Crash-/Datenträgerfälle; LAN/Autostart-Liveprüfung; vollständige Originalparität. Frühere Anforderungen wie Publisherfeeds, persistenter kleiner Prozesshost und konfigurierbare Homereihen bleiben offen. Deshalb keine pauschale Release-/Gesamtfreigabe. Details FEATURE_MATRIX.md und HANDOFF-2026-10-03.md.

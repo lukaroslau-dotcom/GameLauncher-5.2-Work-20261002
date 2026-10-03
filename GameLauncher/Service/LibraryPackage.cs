@@ -51,7 +51,7 @@ public static class LibraryPackage
                         receipts.Add(new(name, bytes, Convert.ToHexString(hash.GetHashAndReset())));
                     }
                     using var manifest = zip.CreateEntry("export-manifest.json").Open();
-                    JsonSerializer.Serialize(manifest, new { format = 1, createdUtc = DateTime.UtcNow, includes = "Library, media, save backups, settings; no installations or downloads", files = receipts });
+                    JsonSerializer.Serialize(manifest, new { format = 1, sourceRoot = root, createdUtc = DateTime.UtcNow, includes = "Library, media, save backups, settings; no installations or downloads", files = receipts });
                 }
                 output.Flush(true);
             }

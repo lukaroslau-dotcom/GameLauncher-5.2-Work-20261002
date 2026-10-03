@@ -1,0 +1,143 @@
+C:\Users\shamr\Documents\GameLauncher-5.2-Work-20261002\GameLauncher.Tests\UiChecks.cs(116,13): warning CS8602: Dereferenzierung eines möglichen Nullverweises. [C:\Users\shamr\Documents\GameLauncher-5.2-Work-20261002\GameLauncher.Tests\GameLauncher.Tests.csproj]
+PASS: Empty installation has zero bytes
+PASS: Installation size includes nested files
+PASS: Installation size formats zero, KB and sizes above 4 GB
+PASS: Missing, invalid and non-directory installation paths are handled safely
+PASS: Unknown size never claims zero bytes
+PASS: A new scan reflects changed installation contents
+PASS: Installation scans support cancellation
+PASS: Installation size does not change persisted game data
+PASS: Persist/reload preserves ID and playtime
+PASS: Search source case-insensitively
+PASS: Extract stable F95 thread ID from source URL
+PASS: Reject lookalike F95 hosts
+PASS: Accept known F95 mirrors without accepting spoofed hosts
+PASS: Normalize bracketed versions and never flag blank installed versions
+PASS: Read safe F95 metadata and gallery URLs through fast/full protocol
+PASS: Detect and retain a newer F95 version
+PASS: Notify again when a newer online release appears while an older update is pending
+PASS: Clear update after installed version matches normalized online version
+PASS: Ignore only the selected normalized online version
+PASS: Show the next online version after an ignored release
+PASS: Search includes notes and F95 developer
+PASS: Persist F95 update and mod metadata across restart
+PASS: Useful library filters expose updates and unplayed games
+PASS: Move F95 preview covers into the permanent cache without leaving duplicate files
+PASS: Recover a corrupt library automatically from the last safe copy
+PASS: Recovered library remains writable and valid
+PASS: Rewrite externally changed library data even when the in-memory model is unchanged
+PASS: Detect missing installations and expose them through the attention filter
+PASS: Archive nested saves
+PASS: Archive replacement retains previous save version
+PASS: Archive preserves directory tree
+PASS: Missing save does not permit archive success
+PASS: Reject save equal to game folder
+PASS: Reject restore inside archive
+PASS: Reject replacing installation with save data
+PASS: Cancel preserves destination
+PASS: Merge restores archive
+PASS: Merge retains other files
+PASS: Replace restores archive
+PASS: Replace keeps old destination backups
+PASS: Remove fixture installation
+PASS: Waiting lifecycle survives restart
+PASS: Reinstall preserves identity and history
+PASS: Reject installation containing another game
+PASS: Invalid import is atomic
+PASS: Import skips duplicate IDs
+PASS: Reject archive ID traversal
+PASS: Protect archive from installation deletion
+PASS: Reject nested migration
+PASS: Migrate archive to empty target
+PASS: Migration preserves history and original saves
+PASS: Do not overwrite existing archive
+PASS: Absolute archive deletion removes version history
+PASS: Corrupt library cannot be overwritten
+PASS: Detect game engine and save folder, skip installers
+PASS: Find save folder inside installation even when no external search root is available
+PASS: Choose a deterministic save automatically and browse from the game folder
+PASS: Normalize launcher start shortcut key
+PASS: Reject unsupported launcher start shortcut key
+PASS: Fully removed game moves to separate deleted library and survives restart
+PASS: Managed library moves complete game folder and remaps internal paths
+PASS: Managed library leaves platform-controlled installations in place
+PASS: ZIP extraction verifies output and preserves original archive
+PASS: Unsafe archive paths are rejected and source archive is preserved
+PASS: Discovery offers supported game archives for extraction
+PASS: IsFirstRun defaults to true for new installations
+PASS: IsFirstRun persists as false after first-run completion
+PASS: AddedDate persists across save/reload
+PASS: UserEditedFields persists across save/reload
+PASS: FindGameByF95ThreadId finds correct game
+PASS: FindGameByF95ThreadId returns null for unknown thread ID
+PASS: Serve the local iPhone/iPad web app with a rotating session PIN
+PASS: Reject an incorrect remote-control PIN
+PASS: Require the correct PIN before opening the protected WebSocket
+PASS: Finished preserves installation, saves and identity across restart
+PASS: Waiting status does not uninstall a game
+PASS: Backup is published with a verified SHA-256 manifest
+PASS: Second verified backup succeeds
+PASS: Third verified backup succeeds
+PASS: Two active backups; older backup retired without deletion
+PASS: Restore verifies payload, excludes manifest and preserves previous save
+PASS: Tampered backup cannot replace current saves
+PASS: Unknown legacy game fields survive import and save
+PASS: Unknown settings survive serialization
+PASS: Reject archive path: ../escape.txt
+PASS: Reject archive path: C:/escape.txt
+PASS: Reject archive path: file:stream
+PASS: Reject archive path: CON.txt
+PASS: Reject archive path: trail./file
+PASS: Reject archive path: nested/../../escape
+PASS: Reject case-insensitive duplicate archive entries
+PASS: Expansion budget enforced before publishing
+PASS: Cancelled extraction preserves archive
+PASS: Import rejects a source changed after preview
+PASS: Repeated import without legacy IDs is idempotent
+PASS: Import preserves a byte-identical original before committing
+PASS: Settings use atomic replacement and keep a recovery copy
+PASS: Corrupt settings cannot be silently reset or overwritten
+PASS: Settings import preserves machine paths, autostart and network authority
+PASS: Settings reject stale preview, existing export and tampered source
+PASS: Verified library package contains manifest and save backups, excludes downloads
+PASS: Library package imports into a new verified copy and preserves original JSON
+PASS: Package import preserves source settings without activating machine or network authority
+PASS: Package export rejects overwrite and cancels without publishing partial files
+PASS: Local search supports spelling mistakes, aliases and tags
+PASS: Updating preserves identity and a persisted previous-installation pointer
+PASS: Removal moves installation into a recovery directory
+PASS: Removed files remain available for recovery
+PASS: Recovery never overwrites an occupied destination
+PASS: Recovery rejects changed installation bytes
+PASS: Verified installation recovery restores original location
+PASS: HTTPS download verifies publisher SHA-256 before completion
+PASS: Hash mismatch never publishes a completed file
+PASS: Completed download is not overwritten
+PASS: Resume sends exact Range and If-Range validator
+PASS: Resume combines bytes without duplication and verifies final hash
+PASS: HTTP 200 resets stale partial bytes before new validators
+PASS: Download redirects require explicit source selection
+PASS: Download cancellation interrupts transfer
+PASS: Public downloader rejects private, loopback and link-local addresses
+PASS: Public address policy admits public IPv4
+PASS: Cancelled job survives restart without starting network traffic
+PASS: Catalog parser decodes titles and rejects malformed identities
+PASS: Search cache survives provider failure with explicit offline provenance
+PASS: Remembering is idempotent and broad search queries never become matching aliases
+PASS: Recent explicitly remembered exact title is eligible for harmless association
+PASS: Association does not erase sequel numbers or subtitle identities
+PASS: Similar sequel titles require confirmation
+PASS: Association preserves ID and metadata and only attaches validated local paths
+PASS: An installed game is never automatically switched to another installation
+PASS: Metadata resolves known tag IDs, preserves custom tags and does not invent unknown labels
+PASS: Metadata enrichment preserves manually edited developer and tags
+PASS: New metadata and remembered search intent survive restart
+All 133 checks passed. Fixtures: C:\Users\shamr\AppData\Local\Temp\GameLauncher.Tests\21760d7993b5403485b50ffbbd47ad59
+PASS: Start real fixture process
+PASS: Reject duplicate launch
+PASS: Keep tracking child after parent exits
+PASS: Minimize tracked child window
+PASS: Restore tracked child window
+PASS: One session-ended event and clean state
+PASS: Playtime covers child session without double counting checkpoint
+Process integration checks passed.

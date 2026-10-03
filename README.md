@@ -1,11 +1,11 @@
 # GameLauncher 5.2 – separate Integrationskopie
 
-Diese Ausgabe erhält die vorhandene WPF/.NET-10-Anwendung. Next dient als Referenz. Originalquellen und ursprüngliches Archiv werden nicht automatisch verwendet. Der Standarddatenordner dieser Ausgabe ist `%LOCALAPPDATA%\GameLauncher.5.2\Archive`.
+WPF/.NET 10, Originalquellen und ursprüngliches Archiv bleiben getrennt. Next dient als Referenz. Standarddaten: `%LOCALAPPDATA%\GameLauncher.5.2\Archive`.
 
-Start: `artifacts\GameLauncher-5.2-candidate\GameLauncher.exe`. Das vollständige Verzeichnis zusammen behalten. Es handelt sich um einen Testkandidaten, nicht um eine vollständig abgenommene Veröffentlichung.
+Start: `artifacts\GameLauncher-5.2-smart-candidate\GameLauncher.exe`. Das vollständige Verzeichnis zusammen behalten. Self-contained Windows x64; kein separat installiertes .NET erforderlich. Dies ist ein getesteter Integrationskandidat, keine vollständige Abnahme aller ursprünglichen und geplanten Funktionen.
 
-Die Bibliothek zeigt höchstens fünf große 16:9-Cover je Reihe, bei schmaleren Fenstern weniger. Downloads und Backups sind über die obere Navigation erreichbar. Einstellungen bieten JSON-Import/-Export und einen verifizierten ZIP-Export der Bibliothek mit Medien und Saves. Dieser ZIP-Export hat noch keinen verbundenen Paketimport; der bestehende JSON-Import bleibt verfügbar.
+Neu: Wunschliste nur mit Namen, F95-Namenssuche und gemerkte Treffer, Entwickler/Tags/Beschreibung/Engine, vorsichtige automatische Zuordnung lokaler Spiele, große Galerie mit Zoom, animiertes Scrollen, durchgängige Update-Listen und unabhängig schließbare Diagnose. Bibliothek mit höchstens fünf großen 16:9-Covern je Reihe.
 
-Statusänderungen auf Fertig/Warten entfernen keine Installation. Installationsentfernung verschiebt die Daten in einen verifizierbaren Wiederherstellungsordner. Wiederherstellung ist auf der Backupseite möglich. Explizites Löschen eines Save-Archivs bleibt eine irreversible, bestätigte Aktion. Entpackte Originalarchive bleiben erhalten.
+Einstellungen bieten JSON-Transfer sowie Bibliothekspakete mit SHA-256-Manifest. Paketimport erstellt eine neue Datenkopie. Statusänderungen löschen keine Installationen. Originalarchive bleiben nach dem Entpacken erhalten. Saves werden verifiziert gesichert; explizites endgültiges Löschen bleibt eine bestätigte Aktion.
 
-Nachweise, Testbefehle und Grenzen: `docs/project/TESTING.md`, `FEATURE_MATRIX.md`, `CURRENT_STATE.md`. Es werden keine Freunde, Erfolge oder Accounts erfunden.
+Bedienung und Erweiterungsanleitung: `docs/project/HANDOFF-2026-10-03.md`. Tatsächliche Tests und offene Grenzen: `TESTING.md`, `FEATURE_MATRIX.md`, `CURRENT_STATE.md`. Keine erfundenen Accounts, Freunde oder Erfolge.

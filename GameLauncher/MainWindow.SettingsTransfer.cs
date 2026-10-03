@@ -18,6 +18,17 @@ public partial class MainWindow
         bool success = await RunFileOperationAsync(() => { LibraryPackage.Export(gameService, picker.FileName, fileOperationCancellation!.Token); return true; }, "Bibliothek, Medien und Backups werden exportiert und geprüft …", true);
         if (success) ShowToast("Bibliothekspaket mit SHA-256 geprüft. Installationen und Downloads sind nicht enthalten.");
     }
+    private async void ImportLibraryPackage_Click(object sender,RoutedEventArgs e)
+    {
+        if(fileOperationActive||launchService.HasRunningGames||f95UpdateRunning)return;
+        var picker=new Microsoft.Win32.OpenFileDialog {Filter="Bibliothekspaket|*.zip"};if(picker.ShowDialog(this)!=true)return;
+        var folder=new Microsoft.Win32.OpenFolderDialog {Title="Übergeordneten Ordner für eine neue Bibliothekskopie wählen"};if(folder.ShowDialog(this)!=true)return;
+        if(MessageBox.Show("Paket prüfen und als neue Bibliothekskopie unter\n"+folder.FolderName+"\nentpacken? Die aktuelle Bibliothek bleibt erhalten; importierte Autostart-/Netzwerkeinstellungen werden nicht aktiviert.","Bibliothekspaket importieren",MessageBoxButton.YesNo)!=MessageBoxResult.Yes)return;
+        string? imported=null;bool success=await RunFileOperationAsync(()=>{imported=LibraryPackageImport.ImportToNewFolder(picker.FileName,folder.FolderName,fileOperationCancellation!.Token);return true;},"Bibliothekspaket wird geprüft …",true);
+        if(!success||imported==null)return;
+        if(MessageBox.Show("Neue Bibliothekskopie ist bereit:\n"+imported+"\n\nJetzt in einem separaten Launcherfenster öffnen?","Import abgeschlossen",MessageBoxButton.YesNo)==MessageBoxResult.Yes)
+        {var start=new ProcessStartInfo(Environment.ProcessPath!){UseShellExecute=false};start.ArgumentList.Add("--data-root");start.ArgumentList.Add(imported);Process.Start(start);}
+    }
     private void ExportSettings_Click(object sender, RoutedEventArgs e)
     {
         var picker = new Microsoft.Win32.SaveFileDialog { Filter = "JSON|*.json", FileName = "gamelauncher-settings.json" };
@@ -43,8 +54,6 @@ public partial class MainWindow
     }
     private void OpenDiagnostics_Click(object sender, RoutedEventArgs e)
     {
-        string root = Path.Combine(AppPaths.Default().ArchivePath, "Logs");
-        Directory.CreateDirectory(root);
-        var start = new ProcessStartInfo("explorer.exe") { UseShellExecute = true }; start.ArgumentList.Add(root); Process.Start(start);
+        OpenDiagnosticsWindow();
     }
 }

@@ -23,7 +23,12 @@ public sealed record F95Metadata(
     string Developer,
     string Status,
     string ImageUrl,
-    IReadOnlyList<string> PreviewUrls);
+    IReadOnlyList<string> PreviewUrls)
+{
+    public IReadOnlyList<string> Tags { get; init; } = Array.Empty<string>();
+    public string Description { get; init; } = "";
+    public string Engine { get; init; } = "";
+}
 
 public sealed class F95UpdateService : IDisposable
 {
@@ -45,10 +50,7 @@ public sealed class F95UpdateService : IDisposable
         };
         client.DefaultRequestHeaders.UserAgent.ParseAdd("GameLauncher/3.1 (private update checker)");
         client.DefaultRequestHeaders.Accept.ParseAdd("application/json");
-        imageClient = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false })
-        {
-            Timeout = TimeSpan.FromSeconds(25)
-        };
+        imageClient = PublicDownloadClient.Create(); imageClient.Timeout = TimeSpan.FromSeconds(25);
         imageClient.DefaultRequestHeaders.UserAgent.ParseAdd("GameLauncher/3.1 (cover loader)");
     }
 
@@ -157,7 +159,7 @@ public sealed class F95UpdateService : IDisposable
             ReadString(root, "developer")?.Trim() ?? "",
             FormatStatus(ReadString(root, "status")),
             (ReadString(root, "image_url") ?? ReadString(root, "image"))?.Trim() ?? "",
-            ParseUrlArray(ReadString(root,"previews_urls")));
+            ParseUrlArray(ReadString(root,"previews_urls"))) { Tags = MetadataEnrichment.ReadTags(root), Description = ReadString(root,"description") ?? "", Engine = ReadString(root,"engine") ?? "" };
     }
 
     private static IReadOnlyList<string> ParseUrlArray(string? json)
@@ -300,7 +302,7 @@ public sealed class F95UpdateService : IDisposable
                             throw new InvalidDataException("Die Online-Version fehlt in der Antwort.");
                         foreach (Game game in entry.Games)
                         {
-                            if (developer.Length > 0) game.F95Developer = developer;
+                            MetadataEnrichment.Apply(game, new F95Metadata(entry.Id, "", onlineVersion ?? "", developer, status, "", Array.Empty<string>()) { Tags = MetadataEnrichment.ReadTags(full.RootElement), Description = ReadString(full.RootElement,"description") ?? "", Engine = ReadString(full.RootElement,"engine") ?? "" });
                             if (status.Length > 0) game.F95Status = status;
                         }
                     }

@@ -39,6 +39,7 @@ public partial class MainWindow
     private void ApplyPresentation()
     {
         var settings = settingsService.Settings;
+        Controls.SmoothScroll.ReducedMotion = settings.ReduceMotion;
         double scale = double.IsFinite(settings.UiScale) ? Math.Clamp(settings.UiScale, .8, 2) : 1;
         ShellGrid.LayoutTransform = new ScaleTransform(scale, scale);
         bool opaque = settings.ReduceTransparency || SystemParameters.HighContrast || RenderCapability.Tier == 0;
