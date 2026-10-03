@@ -11,6 +11,7 @@ using System.Net.WebSockets;
 using System.Security.Cryptography;
 using System.Diagnostics;
 
+if (args.Length == 2 && args[0] == "--migration-check") { MigrationChecks.Run(args[1]); return; }
 if (args.Contains("--ui-test")) { try { UiChecks.Run(); } catch(Exception ex) { Console.Error.WriteLine(ex); Environment.ExitCode=1; } return; }
 if(args.Length==2&&args[0]=="--gif-check")
 {
@@ -293,9 +294,9 @@ using(var archive=ZipFile.Open(zip,ZipArchiveMode.Create))
 }
 
 var extracted=ArchiveExtractionService.ExtractAndDelete(zip,Folder("ExtractedGames"),CancellationToken.None,false);
-Check(extracted.Success && extracted.SourceDeleted && !File.Exists(zip) && File.Exists(Path.Combine(extracted.Destination,"PackedGame.exe")) &&
+Check(extracted.Success && !extracted.SourceDeleted && File.Exists(zip) && File.Exists(Path.Combine(extracted.Destination,"PackedGame.exe")) &&
     File.Exists(Path.Combine(extracted.Destination,"data","file.dat")),
-    "ZIP extraction verifies output and deletes source only after success");
+    "ZIP extraction verifies output and preserves original archive");
 
 string unsafeZip=Path.Combine(root,"Unsafe.zip");
 using(var archive=ZipFile.Open(unsafeZip,ZipArchiveMode.Create))
@@ -361,6 +362,8 @@ using(var remoteHost=new RemoteHostService())
     Check(socket.State==WebSocketState.Open&&remoteHost.ClientCount==1,"Require the correct PIN before opening the protected WebSocket");
     socket.Abort();remoteHost.Stop();
 }
+HardeningChecks.Run(root, Check);
+await DownloadChecks.Run(root, Check);
 Console.WriteLine($"All {passed} checks passed. Fixtures: {root}");
 
 if (args.Length == 2 && args[0] == "--process-test")

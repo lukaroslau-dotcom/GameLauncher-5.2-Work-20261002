@@ -26,11 +26,16 @@ public partial class MainWindow
     private uint pendingShortcutModifiers = 3;
     private Game? featuredGame;
     private bool fileOperationActive;
+    private CancellationTokenSource? fileOperationCancellation;
     internal void BringToFront() => RestoreFromTray();
-    private async Task<bool> RunFileOperationAsync(Func<bool> operation, string title)
+    private Task<bool> RunFileOperationAsync(Func<bool> operation, string title) => RunFileOperationAsync(operation, title, false);
+    private async Task<bool> RunFileOperationAsync(Func<bool> operation, string title, bool canCancel)
     {
-        if (fileOperationActive) return false;
+        if (fileOperationActive || f95UpdateRunning) { ShowToast("Bitte laufende Verarbeitung abwarten."); return false; }
         fileOperationActive = true;
+        fileOperationCancellation = new CancellationTokenSource();
+        BusyCancelButton.IsEnabled = true;
+        BusyCancelButton.Visibility = canCancel ? Visibility.Visible : Visibility.Collapsed;
         discovery.Pause(true);
         scanCancellation?.Cancel();
         BusyText.Text = title;
@@ -39,11 +44,14 @@ public partial class MainWindow
         catch (Exception ex) { Debug.WriteLine(ex); ShowToast(ex.Message); return false; }
         finally
         {
+            fileOperationCancellation?.Dispose(); fileOperationCancellation = null;
             fileOperationActive = false;
             BusyOverlay.Visibility = Visibility.Collapsed;
             discovery.Pause(quietMode);
         }
     }
+
+    private void CancelFileOperation_Click(object sender, RoutedEventArgs e) { fileOperationCancellation?.Cancel(); BusyCancelButton.IsEnabled = false; }
 
     private void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
@@ -149,6 +157,7 @@ public partial class MainWindow
     private void EnterQuietMode()
     {
         quietMode = true;
+        downloads?.PauseAll();
         discovery.Pause(true);
         scanCancellation?.Cancel();
         toastTimer.Stop();
@@ -181,22 +190,28 @@ public partial class MainWindow
     private void RefreshDashboard()
     {
         var all = gameService.QueryGames(GameListFilter.All,null);
-        var installed = all.Where(g => g.IsInstalled && g.Status == GameStatus.Installed).ToList();
+        var installed = all.Where(g => g.IsInstalled && g.Status != GameStatus.Deleted && File.Exists(g.ExecutablePath)).ToList();
         HomeDashboard.Model.Summary = all.Count + " Spiele · lokal auf deinem PC";
         HomeDashboard.Model.TotalTime = FormatHelper.FormatPlaytime(TimeSpan.FromTicks(all.Sum(g => g.Playtime.Ticks)));
         HomeDashboard.Model.Favorites = all.Count(g => g.IsFavorite).ToString();
         HomeDashboard.Model.Waiting = all.Count(g => g.Status == GameStatus.WaitingForUpdates).ToString();
-        var recent = installed.Where(g => g.LastPlayed != null).OrderByDescending(g => g.LastPlayed).Take(4).ToList();
+        var recent = installed.Where(g => g.LastPlayed != null).OrderByDescending(g => g.LastPlayed).Take(5).ToList();
         HomeDashboard.RecentItems.ItemsSource = recent;
         HomeDashboard.RecentSection.Visibility = recent.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
         var recentlyAdded = installed.Where(g => g.AddedDate != DateTime.MinValue && g.AddedDate != default)
-            .OrderByDescending(g => g.AddedDate).Take(6).ToList();
+            .OrderByDescending(g => g.AddedDate).Take(5).ToList();
         HomeDashboard.RecentlyAddedItems.ItemsSource = recentlyAdded;
         HomeDashboard.RecentlyAddedSection.Visibility = recentlyAdded.Count <= 1 ? Visibility.Collapsed : Visibility.Visible;
         var recentlyUpdated = installed.Where(g => g.UpdateAvailable && g.Status is GameStatus.Installed or GameStatus.WaitingForUpdates)
-            .OrderByDescending(g => g.AddedDate).Take(6).ToList();
+            .OrderByDescending(g => g.AddedDate).Take(5).ToList();
         HomeDashboard.RecentlyUpdatedItems.ItemsSource = recentlyUpdated;
         HomeDashboard.RecentlyUpdatedSection.Visibility = recentlyUpdated.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+        var favorites = all.Where(g => g.IsFavorite).Take(5).ToList();
+        HomeDashboard.FavoritesItems.ItemsSource = favorites;
+        HomeDashboard.FavoritesSection.Visibility = favorites.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        var mix = installed.OrderByDescending(g => g.IsFavorite).ThenBy(g => g.LastPlayed ?? DateTime.MinValue).ThenBy(g => g.Name).Take(5).ToList();
+        HomeDashboard.SmartMixItems.ItemsSource = mix;
+        HomeDashboard.SmartMixSection.Visibility = mix.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         SidebarStatsText.Text = all.Count + " Spiele · " + (int)all.Sum(g => g.Playtime.TotalHours) + " Stunden";
         CollectionSummaryText.Text = installed.Count + " bereit";
         featuredGame = installed.OrderByDescending(g => g.LastPlayed).FirstOrDefault();
@@ -337,7 +352,7 @@ public partial class MainWindow
         {
             ShowToast(extracted.Result.SourceDeleted
                 ? "Archiv entpackt und gelöscht. Bitte die Startdatei im entpackten Ordner später auswählen."
-                : extracted.Result.Error);
+                : "Entpackt und hinzugefügt; das Originalarchiv bleibt erhalten.");
             return;
         }
 
@@ -345,7 +360,7 @@ public partial class MainWindow
         if (added)
             ShowToast(extracted.Result.SourceDeleted
                 ? $"Mit {extracted.Result.Tool} entpackt, Archiv gelöscht und Spiel hinzugefügt."
-                : extracted.Result.Error);
+                : "Entpackt und hinzugefügt; das Originalarchiv bleibt erhalten.");
     }
     private void ExportJson_Click(object sender, RoutedEventArgs e)
     {

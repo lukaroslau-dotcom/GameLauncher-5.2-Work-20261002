@@ -1,14 +1,14 @@
 <UserControl x:Class="GameLauncher.Views.DashboardView" x:Name="Root" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:controls="clr-namespace:GameLauncher.Controls">
 <ScrollViewer><StackPanel>
   <TextBlock Text="Dein Spielraum" Style="{DynamicResource PageTitle}" Margin="0,0,0,24"/>
-  <controls:AdaptiveColumns Breakpoint="1050" FirstRatio="0.72">
-    <Border x:Name="FeaturedHost" x:FieldModifier="public" CornerRadius="24" Background="{DynamicResource SurfaceSecondary}" MinHeight="300" ClipToBounds="True">
+  <controls:AdaptiveColumns Breakpoint="1050" FirstRatio="0.78">
+    <Border x:Name="FeaturedHost" x:FieldModifier="public" CornerRadius="24" Background="{DynamicResource SurfaceSecondary}" MinHeight="360" ClipToBounds="True">
       <Grid>
-        <controls:CroppedImage x:Name="FeaturedImage" x:FieldModifier="public" DecodeWidth="1600"/>
+        <controls:CroppedImage x:Name="FeaturedImage" x:FieldModifier="public" DecodeWidth="1920"/>
         <Border><Border.Background><LinearGradientBrush StartPoint="0,0" EndPoint="1,0"><GradientStop Color="#E80A0B0D" Offset="0"/><GradientStop Color="#900A0B0D" Offset="0.5"/><GradientStop Color="#200A0B0D" Offset="1"/></LinearGradientBrush></Border.Background></Border>
         <StackPanel Margin="34" VerticalAlignment="Center" HorizontalAlignment="Left" MaxWidth="480">
           <TextBlock Text="WEITERSPIELEN" Foreground="{DynamicResource AccentColor}" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,12"/>
-          <TextBlock x:Name="FeaturedTitle" x:FieldModifier="public" Text="Deine Sammlung." FontSize="36" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,0,0,16"/>
+          <TextBlock x:Name="FeaturedTitle" x:FieldModifier="public" Text="Deine Sammlung." FontSize="42" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,0,0,16"/>
           <TextBlock x:Name="FeaturedMeta" x:FieldModifier="public" Foreground="{DynamicResource TextSecondary}" TextWrapping="Wrap" Margin="0,0,0,24"/>
           <Button x:Name="FeaturedPlayButton" x:FieldModifier="public" Content="Spielen" Style="{DynamicResource PrimaryButton}" HorizontalAlignment="Left" Padding="28,0" Height="46" Click="Play_Click"/>
         </StackPanel>
@@ -41,6 +41,15 @@
   <StackPanel x:Name="RecentlyUpdatedSection" x:FieldModifier="public" Margin="0,28,0,0" Visibility="Collapsed">
     <TextBlock Text="Kürzlich aktualisiert" Style="{DynamicResource SectionTitle}" Margin="0,0,0,16"/>
     <ItemsControl x:Name="RecentlyUpdatedItems" x:FieldModifier="public" ItemTemplate="{DynamicResource GameCardTemplate}"><ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel></ItemsControl>
+  </StackPanel>
+  <StackPanel x:Name="FavoritesSection" x:FieldModifier="public" Margin="0,28,0,0" Visibility="Collapsed">
+    <TextBlock Text="Favoriten" Style="{DynamicResource SectionTitle}" Margin="0,0,0,16"/>
+    <ItemsControl x:Name="FavoritesItems" x:FieldModifier="public" ItemTemplate="{DynamicResource GameCardTemplate}"><ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel></ItemsControl>
+  </StackPanel>
+  <StackPanel x:Name="SmartMixSection" x:FieldModifier="public" Margin="0,28,0,0" Visibility="Collapsed">
+    <TextBlock Text="Smart Mix" Style="{DynamicResource SectionTitle}"/>
+    <TextBlock Text="Aus deiner Sammlung · Favoriten und länger nicht gespielt" Style="{DynamicResource BodyText}" Margin="0,6,0,16"/>
+    <ItemsControl x:Name="SmartMixItems" x:FieldModifier="public" ItemTemplate="{DynamicResource GameCardTemplate}"><ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel></ItemsControl>
   </StackPanel>
   <DockPanel Margin="0,28,0,16"><Button Content="Alle Spiele →" DockPanel.Dock="Right" Click="Library_Click" Style="{DynamicResource SecondaryButton}" Padding="12,0"/><StackPanel><TextBlock Text="Deine Bibliothek" Style="{DynamicResource SectionTitle}"/><TextBlock x:Name="CollectionSummaryText" x:FieldModifier="public" Style="{DynamicResource BodyText}" Margin="0,4,0,0"/></StackPanel></DockPanel>
   <ItemsControl x:Name="GameItemsControl" x:FieldModifier="public" ItemTemplate="{DynamicResource GameCardTemplate}"><ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel></ItemsControl>

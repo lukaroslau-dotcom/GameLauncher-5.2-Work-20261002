@@ -1,0 +1,23 @@
+<UserControl x:Class="GameLauncher.Views.DownloadsView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+ <ScrollViewer><StackPanel>
+  <TextBlock Text="Downloads" Style="{DynamicResource PageTitle}"/>
+  <TextBlock Text="Dateien laden, pausieren und geprüft entpacken. Die Aufnahme in deine Bibliothek bestätigst du anschließend." Style="{DynamicResource BodyText}" TextWrapping="Wrap" Margin="0,10,0,24"/>
+  <Border Style="{DynamicResource GlassPanel}"><StackPanel>
+   <TextBlock Text="Neuer Download" Style="{DynamicResource SectionTitle}" Margin="0,0,0,14"/>
+   <TextBox x:Name="SourceUrl" Tag="Öffentliche HTTPS-Datei-URL" Margin="0,0,0,12"/>
+   <TextBox x:Name="TargetName" Tag="Dateiname, z. B. Spiel.zip" Margin="0,0,0,12"/>
+   <TextBox x:Name="ExpectedHash" Tag="SHA-256 des Herausgebers (optional)" Margin="0,0,0,14"/>
+   <WrapPanel><Button Content="Download starten" Click="Add_Click" Style="{DynamicResource PrimaryButton}" Margin="0,0,12,8"/><Button Content="Alle pausieren" Click="PauseAll_Click" Margin="0,0,12,8"/><Button Content="Downloadordner öffnen" Click="Folder_Click" Margin="0,0,0,8"/></WrapPanel>
+   <TextBlock Text="Bis 20 GB pro Datei. Quellen mit Anmeldung oder Weiterleitung bitte im Browser verwenden. Teil-Dateien und Originalarchive bleiben erhalten." Style="{DynamicResource BodyText}" TextWrapping="Wrap" Margin="0,10,0,0"/>
+  </StackPanel></Border>
+  <TextBlock x:Name="Feedback" TextWrapping="Wrap" Foreground="{DynamicResource AccentColor}" Margin="0,18,0,18"/>
+  <ItemsControl x:Name="Rows"><ItemsControl.ItemTemplate><DataTemplate>
+   <Border Style="{DynamicResource GlassPanel}" Margin="0,0,0,12"><StackPanel>
+    <TextBlock Text="{Binding FileName}" FontSize="20" FontWeight="SemiBold"/>
+    <TextBlock Text="{Binding Detail}" TextWrapping="Wrap" Style="{DynamicResource BodyText}" Margin="0,10,0,14"/>
+    <ProgressBar Value="{Binding Percent}" Maximum="100" Height="6" Foreground="{DynamicResource AccentColor}" Background="{DynamicResource SurfaceSecondary}" Margin="0,0,0,16"/>
+    <WrapPanel><Button Content="Start / Fortsetzen" Click="Resume_Click" Margin="0,0,10,8"/><Button Content="Pause" Click="Pause_Click" Margin="0,0,10,8"/><Button Content="Abbrechen" Click="Cancel_Click" Margin="0,0,10,8"/><Button Content="Archiv hinzufügen …" Click="Import_Click" Margin="0,0,10,8"/></WrapPanel>
+   </StackPanel></Border>
+  </DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
+ </StackPanel></ScrollViewer>
+</UserControl>

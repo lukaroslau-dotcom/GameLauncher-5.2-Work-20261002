@@ -8,3 +8,21 @@
 - Exact verification: dotnet build GameLauncher/GameLauncher.csproj -c Release; exit 0, 4 warnings, 0 errors. No runtime or regression test claim.
 - Blockers: WPF preservation conflicts with supplied WinUI 3/React architecture rule; clarification pending.
 - Baseline impact: establishes local source availability, not functionality or release readiness. Existing V7 repository unchanged.
+
+## 2026-10-02 — 5.2 preservation and first reliability delta
+- Model/reasoning: current Codex session; no delegated model or Astra review claimed.
+- Commit: uncommitted delta on baseline 6e9d17d.
+- Changed files: archive/path/backup services, GameService, GameLaunchService, AppPaths/SettingsService, models, card layout/context-menu, MainWindow status/import flows, HardeningChecks/Program, AGENTS.md and project records.
+- Result: original archive retention, bounded managed extraction, verified backup/restore, retired history, independent status, preserved unknown JSON fields, five-card maximum. Default runtime data isolated from original archive.
+- Tests: baseline 74 checks and WPF UI pass; intermediate compile failure corrected; 93 checks pass before latest data-root/settings delta. No release claim.
+- Blockers/remaining: backup/download UI and automation, final regression/real starts/performance, full target matrix. Native interactive automation unavailable; programmatic WPF checks available.
+- Baseline impact: 5.2 WPF is the selected product basis for this independent copy, per owner's decision authorization.
+
+## 2026-10-03 — Integrationskandidat mit verifizierten Dateiflüssen und Windows-Nachweisen
+- Model/reasoning: aktuelle Codex-Sitzung, keine Delegation/kein behauptetes Astra-Review; Laufzeit-Modellkennung nicht unabhängig ermittelt.
+- Commit: dieser Eintrag gehört zum Commit mit Betreff `feat: integrate safe 5.2 workflows and verified Windows candidate`, auf Basissnapshot 6e9d17d; Hash über Git auflösbar.
+- Geänderte Dateien: MainWindow-Teile/Views/Theme, Archiv/Backup/Recovery/Download/Import/Settings/Prozess-/Pfaddienste, additive Modelle, Tests/MigrationChecks/Smoke, scripts/Test-Published.ps1, README und docs/project plus docs/verification. Vollständige Dateiliste im Commit.
+- Ergebnis: verbundene neue Seiten und sichere Dateiflüsse; ursprüngliche 5.2-Funktionen bleiben im Code; fünf größere Landscape-Cover. Neue Abbruchwege für Export/Entpacken. Keine pauschale Paritäts-/Releasebehauptung.
+- Exakte Tests: `dotnet run --project GameLauncher.Tests -c Release -- --process-test <TestGame.exe>` 120 Kernchecks + 7 Prozesschecks; UI-Kommando in TESTING.md 48 Checks; `--migration-check <original games.json>` arbeitet auf Tempkopie, 42 übernommen/0 Wiederimport/Original unverändert; self-contained Publish; `./scripts/Test-Published.ps1` zweimal echte EXE mit Exit 0. Rohbelege versioniert in docs/verification.
+- Blocker/Rest: Details FEATURE_MATRIX.md; native interaktive Desktopabnahme nicht verfügbar, Idle-CPU schwankt deutlich, vollständige Parität sowie Provider-/Publisher-/Paketimport-/Crashgrenzen offen.
+- Baselineauswirkung: WPF/.NET10/JSON bleiben unverändert die Architektur; bestätigt sind additive Datenfelder, isolierter Standarddatenordner, verifizierte Dateiveröffentlichung und die tatsächlich ausgeführten Tests. 58 Originalquelldateien weiter identisch.

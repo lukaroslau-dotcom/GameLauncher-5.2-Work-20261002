@@ -6,6 +6,7 @@ namespace GameLauncher.Constants
         public const string WaitingForUpdates = "Waiting for Updates";
         public const string Finished = "Finished";
         public const string Deleted = "Deleted";
+        public const string Wishlist = "Wishlist";
 
         public static string Normalize(string? status)
         {
@@ -13,6 +14,7 @@ namespace GameLauncher.Constants
                 return Installed;
 
             string value = status.Trim();
+            if (string.Equals(value, Wishlist, StringComparison.OrdinalIgnoreCase) || string.Equals(value, "Wunschliste", StringComparison.OrdinalIgnoreCase)) return Wishlist;
 
             if (string.Equals(value, Installed, StringComparison.OrdinalIgnoreCase))
                 return Installed;

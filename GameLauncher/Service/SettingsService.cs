@@ -13,15 +13,24 @@ namespace GameLauncher.Service
             WriteIndented = true
         };
 
+        private readonly AppPaths? isolatedPaths;
+        public SettingsService(AppPaths? testPaths = null) => isolatedPaths = testPaths;
+        private AppPaths DefaultPaths => isolatedPaths ?? AppPaths.Default();
         public AppSettings Settings { get; private set; } = new AppSettings();
-        public void RestoreSettings(string json) => Settings = JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
+        public void RestoreSettings(string json) => Settings = JsonSerializer.Deserialize<AppSettings>(json) ?? throw new JsonException("Leere Einstellungen.");
 
         public AppPaths LoadAndResolvePaths()
         {
-            AppPaths defaultPaths = AppPaths.Default();
+            AppPaths defaultPaths = DefaultPaths;
             defaultPaths.EnsureCreated();
 
             Settings = LoadFrom(defaultPaths.SettingsFilePath);
+
+            if (isolatedPaths != null || Environment.GetCommandLineArgs().Contains("--data-root"))
+            {
+                Settings.ArchivePath = defaultPaths.ArchivePath;
+                return defaultPaths;
+            }
 
             if (!string.IsNullOrWhiteSpace(Settings.ArchivePath) &&
                 !string.Equals(
@@ -33,9 +42,7 @@ namespace GameLauncher.Service
                 try { custom.EnsureCreated(); }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine(ex);
-                    Settings.ArchivePath = defaultPaths.ArchivePath;
-                    return defaultPaths;
+                    throw new IOException("Der konfigurierte Datenordner ist nicht erreichbar. Einstellungen bleiben unverändert.", ex);
                 }
 
                 AppSettings customSettings = LoadFrom(custom.SettingsFilePath);
@@ -58,7 +65,7 @@ namespace GameLauncher.Service
 
             SaveTo(paths.SettingsFilePath, Settings);
 
-            AppPaths defaultPaths = AppPaths.Default();
+            AppPaths defaultPaths = DefaultPaths;
             if (!string.Equals(paths.SettingsFilePath, defaultPaths.SettingsFilePath, StringComparison.OrdinalIgnoreCase))
             {
                 defaultPaths.EnsureCreated();
@@ -68,7 +75,7 @@ namespace GameLauncher.Service
 
         public void ApplyStartWithWindows(bool enabled)
         {
-            if (Environment.GetCommandLineArgs().Contains("--data-root")) return;
+            if (isolatedPaths != null || Environment.GetCommandLineArgs().Contains("--data-root")) return;
             const string runKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
             string exePath = Environment.ProcessPath ?? "";
 
@@ -79,9 +86,9 @@ namespace GameLauncher.Service
                     return;
 
                 if (enabled && !string.IsNullOrWhiteSpace(exePath))
-                    key.SetValue("GameLauncher", $"\"{exePath}\"");
+                    key.SetValue("GameLauncher.5.2", $"\"{exePath}\"");
                 else
-                    key.DeleteValue("GameLauncher", false);
+                    key.DeleteValue("GameLauncher.5.2", false);
             }
             catch (Exception ex)
             {
@@ -96,8 +103,10 @@ namespace GameLauncher.Service
 
             try
             {
+                PathSafety.RejectLinks(filePath);
+                if (new FileInfo(filePath).Length > 4 * 1024 * 1024) throw new IOException("Einstellungsdatei zu groß.");
                 string json = File.ReadAllText(filePath);
-                AppSettings settings = JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
+                AppSettings settings = JsonSerializer.Deserialize<AppSettings>(json) ?? throw new JsonException("Leere Einstellungen.");
                 if (!settings.RemoteStreamingV51Migrated)
                 {
                     // Apply the low-latency HD profile once when upgrading from v5.
@@ -117,17 +126,14 @@ namespace GameLauncher.Service
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Settings konnten nicht geladen werden: {ex.Message}");
-                return new AppSettings();
+                throw new IOException("Einstellungen konnten nicht geladen werden; die Datei bleibt unverändert: " + filePath, ex);
             }
         }
 
         private static void SaveTo(string filePath, AppSettings settings)
         {
-            string json = JsonSerializer.Serialize(settings, JsonOptions);
-            string temp = filePath + ".tmp";
-            File.WriteAllText(temp, json);
-            File.Move(temp, filePath, overwrite: true);
+            if (File.Exists(filePath)) _ = LoadFrom(filePath); // Never overwrite corrupt or unreadable settings.
+            AtomicJsonFile.Write(filePath, settings);
         }
     }
 }

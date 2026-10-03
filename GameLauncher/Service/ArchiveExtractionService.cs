@@ -1,6 +1,6 @@
-using System.Diagnostics;
 using System.IO;
-using System.IO.Compression;
+using SharpCompress.Archives;
+using SharpCompress.Common;
 
 namespace GameLauncher.Service;
 
@@ -8,177 +8,112 @@ public sealed record ArchiveExtractionResult(bool Success, string Destination, s
 
 public static class ArchiveExtractionService
 {
-    private static readonly HashSet<string> SupportedExtensions = new(StringComparer.OrdinalIgnoreCase) { ".zip", ".rar", ".7z" };
+    public const long MaxExpandedBytes = 20L * 1024 * 1024 * 1024;
+    public const int MaxEntries = 100000;
+    private static readonly HashSet<string> Extensions = new(StringComparer.OrdinalIgnoreCase) { ".zip", ".rar", ".7z" };
+    public static bool IsSupported(string? path) => !string.IsNullOrWhiteSpace(path) && Extensions.Contains(Path.GetExtension(path));
 
-    public static bool IsSupported(string? path) => !string.IsNullOrWhiteSpace(path) && SupportedExtensions.Contains(Path.GetExtension(path));
-
+    // Retained API for old callers; originals are now always preserved.
     public static ArchiveExtractionResult ExtractAndDelete(string archivePath, string gameRoot, CancellationToken cancellation, bool preferExternal = true)
+        => Extract(archivePath, gameRoot, cancellation);
+
+    public static ArchiveExtractionResult Extract(string archivePath, string gameRoot, CancellationToken cancellation, long maxBytes = MaxExpandedBytes)
     {
-        string source = Path.GetFullPath(archivePath);
-        if (!File.Exists(source) || !IsSupported(source))
-            return new(false, "", "", false, "Die Archivdatei wird nicht unterstützt oder wurde nicht gefunden.");
-
-        string root;
-        try
-        {
-            root = Path.GetFullPath(gameRoot);
-            Directory.CreateDirectory(root);
-            PathSafety.RejectLinks(root);
-        }
-        catch (Exception ex) { return new(false, "", "", false, "Der Spieleordner ist nicht verwendbar: " + ex.Message); }
-
-        string destination = UniqueDestination(root, SafeFolderName(Path.GetFileNameWithoutExtension(source)));
-        string stage = destination + ".entpacken-" + Guid.NewGuid().ToString("N");
-        string tool = "Windows";
+        string? stage = null;
         try
         {
             cancellation.ThrowIfCancellationRequested();
+            if (maxBytes < 1 || maxBytes > MaxExpandedBytes) throw new IOException("Ungültiges Entpacklimit.");
+            string source = Path.GetFullPath(archivePath);
+            string root = Path.GetFullPath(gameRoot);
+            if (!IsSupported(source)) throw new IOException("Unterstützt werden ZIP, RAR und 7z.");
+            PathSafety.RejectLinks(source);
+            PathSafety.RejectLinks(root);
+            if ((File.GetAttributes(source) & FileAttributes.ReparsePoint) != 0) throw new IOException("Archivverknüpfungen sind nicht erlaubt.");
+            Directory.CreateDirectory(root);
+            string name = Path.GetFileNameWithoutExtension(source).Trim().TrimEnd('.');
+            if (name.Length == 0) name = "Entpacktes Spiel";
+            string destination = Path.Combine(root, name);
+            for (int n = 2; Directory.Exists(destination) || File.Exists(destination); n++) destination = Path.Combine(root, $"{name} ({n})");
+            stage = Path.Combine(root, ".entpacken-" + Guid.NewGuid().ToString("N"));
+            using var heldSource = new FileStream(source, FileMode.Open, FileAccess.Read, FileShare.Read);
+            using var archive = ArchiveFactory.OpenArchive(heldSource);
+            if (archive.Type is not (ArchiveType.Zip or ArchiveType.Rar or ArchiveType.SevenZip)) throw new IOException("Nicht unterstütztes Archivformat.");
+            var entries = archive.Entries.Take(MaxEntries + 1).ToArray();
+            if (entries.Length == 0 || entries.Length > MaxEntries) throw new IOException("Leeres Archiv oder zu viele Einträge.");
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            long total = 0;
+            foreach (var entry in entries)
+            {
+                cancellation.ThrowIfCancellationRequested();
+                string target = Child(stage, entry.Key ?? "");
+                if (!seen.Add(target)) throw new IOException("Doppelter Archivpfad.");
+                if (entry.IsEncrypted || !string.IsNullOrEmpty(entry.LinkTarget)) throw new IOException("Verschlüsselte Einträge und Verknüpfungen werden abgelehnt.");
+                if (entry.Attrib is int attributes && ((attributes & 0x400) != 0 || ((attributes >> 16) & 0xF000) is not (0 or 0x8000 or 0x4000)))
+                    throw new IOException("Archiv enthält eine Spezialdatei.");
+                total = checked(total + entry.Size);
+                if (entry.Size < 0 || total > maxBytes) throw new IOException("Entpacklimit überschritten.");
+            }
+            if (new DriveInfo(Path.GetPathRoot(root)!).AvailableFreeSpace < total + 128L * 1024 * 1024) throw new IOException("Nicht genügend freier Speicherplatz.");
             Directory.CreateDirectory(stage);
-            string extension = Path.GetExtension(source);
-            string? winRar = preferExternal ? FindExecutable("WinRAR.exe", "UnRAR.exe") : null;
-            string? sevenZip = preferExternal ? FindExecutable("7z.exe", "7zz.exe") : null;
-
-            if (winRar != null)
+            long written = 0;
+            byte[] buffer = new byte[128 * 1024];
+            foreach (var entry in entries)
             {
-                tool = Path.GetFileName(winRar).StartsWith("WinRAR", StringComparison.OrdinalIgnoreCase) ? "WinRAR" : "UnRAR";
-                RunExtractor(winRar, tool == "WinRAR"
-                    ? ["x", "-inul", "-o+", "-y", source, stage + Path.DirectorySeparatorChar]
-                    : ["x", "-idq", "-o+", "-y", source, stage + Path.DirectorySeparatorChar], cancellation);
+                cancellation.ThrowIfCancellationRequested();
+                string target = Child(stage, entry.Key!);
+                if (entry.IsDirectory) { Directory.CreateDirectory(target); continue; }
+                Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+                PathSafety.RejectLinks(target);
+                using var input = entry.OpenEntryStream();
+                using var output = new FileStream(target, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+                long entryWritten = 0;
+                int count;
+                while ((count = input.Read(buffer)) > 0)
+                {
+                    cancellation.ThrowIfCancellationRequested();
+                    written = checked(written + count); entryWritten = checked(entryWritten + count);
+                    if (written > maxBytes || entryWritten > entry.Size) throw new IOException("Tatsächliche Entpackgröße überschreitet das Limit.");
+                    output.Write(buffer, 0, count);
+                }
+                if (entryWritten != entry.Size) throw new IOException("Unvollständiger Archiveintrag.");
+                output.Flush(true);
             }
-            else if (extension.Equals(".zip", StringComparison.OrdinalIgnoreCase))
-            {
-                ExtractZipSafely(source, stage, cancellation);
-            }
-            else if (sevenZip != null)
-            {
-                tool = "7-Zip";
-                RunExtractor(sevenZip, ["x", "-y", "-aoa", "-o" + stage, source], cancellation);
-            }
-            else
-            {
-                throw new IOException("Für RAR- und 7z-Dateien wird WinRAR oder 7-Zip benötigt. ZIP-Dateien kann Windows direkt entpacken.");
-            }
-
             cancellation.ThrowIfCancellationRequested();
             PathSafety.RejectTreeLinks(stage);
-            var entries = new DirectoryInfo(stage).EnumerateFileSystemInfos().ToList();
-            if (entries.Count == 0) throw new IOException("Das Archiv enthält keine Dateien.");
-
-            string payload = entries.Count == 1 && entries[0] is DirectoryInfo onlyFolder ? onlyFolder.FullName : stage;
+            var children = new DirectoryInfo(stage).GetFileSystemInfos();
+            string payload = children.Length == 1 && children[0] is DirectoryInfo ? children[0].FullName : stage;
             Directory.Move(payload, destination);
-            if (!PathSafety.Same(payload, stage) && Directory.Exists(stage)) Directory.Delete(stage);
-
-            try
-            {
-                File.Delete(source);
-                return new(true, destination, tool, true, "");
-            }
-            catch (Exception ex)
-            {
-                return new(true, destination, tool, false, "Entpackt, aber die Archivdatei konnte nicht gelöscht werden: " + ex.Message);
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            CleanupStage(stage);
-            return new(false, "", tool, false, "Entpacken abgebrochen. Die Archivdatei wurde behalten.");
+            if (Directory.Exists(stage)) Directory.Delete(stage);
+            return new(true, destination, "ZIP/RAR/7z", false, "");
         }
         catch (Exception ex)
         {
-            CleanupStage(stage);
-            return new(false, "", tool, false, "Entpacken fehlgeschlagen. Die Archivdatei wurde behalten: " + ex.Message);
-        }
-    }
-
-    private static void ExtractZipSafely(string source, string stage, CancellationToken cancellation)
-    {
-        using var zip = ZipFile.OpenRead(source);
-        long required = 0;
-        foreach (var entry in zip.Entries)
-        {
-            cancellation.ThrowIfCancellationRequested();
-            if ((entry.ExternalAttributes >> 16 & 0xF000) == 0xA000) throw new IOException("Das ZIP enthält eine nicht erlaubte Verknüpfung.");
-            required = checked(required + entry.Length);
-            string target = Path.GetFullPath(Path.Combine(stage, entry.FullName.Replace('/', Path.DirectorySeparatorChar)));
-            if (!PathSafety.Within(target, stage)) throw new IOException("Das ZIP enthält einen unsicheren Pfad.");
-        }
-        string root = Path.GetPathRoot(stage)!;
-        if (new DriveInfo(root).AvailableFreeSpace < required + 128L * 1024 * 1024)
-            throw new IOException("Auf dem Ziellaufwerk ist nicht genug freier Speicherplatz.");
-
-        foreach (var entry in zip.Entries)
-        {
-            cancellation.ThrowIfCancellationRequested();
-            string target = Path.GetFullPath(Path.Combine(stage, entry.FullName.Replace('/', Path.DirectorySeparatorChar)));
-            if (entry.FullName.EndsWith('/') || entry.FullName.EndsWith('\\')) { Directory.CreateDirectory(target); continue; }
-            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-            using var input = entry.Open();
-            using var output = new FileStream(target, FileMode.CreateNew, FileAccess.Write, FileShare.None, 1024 * 128, FileOptions.SequentialScan);
-            input.CopyTo(output, 1024 * 128);
-        }
-    }
-
-    private static void RunExtractor(string executable, IReadOnlyList<string> arguments, CancellationToken cancellation)
-    {
-        var start = new ProcessStartInfo(executable) { UseShellExecute = false, CreateNoWindow = true, RedirectStandardError = true, RedirectStandardOutput = true };
-        foreach (string argument in arguments) start.ArgumentList.Add(argument);
-        using var process = Process.Start(start) ?? throw new IOException("Das Entpackprogramm konnte nicht gestartet werden.");
-        Task<string> output = process.StandardOutput.ReadToEndAsync();
-        Task<string> error = process.StandardError.ReadToEndAsync();
-        try
-        {
-            while (!process.WaitForExit(200)) cancellation.ThrowIfCancellationRequested();
-        }
-        catch
-        {
-            try { process.Kill(true); } catch { }
-            throw;
-        }
-        Task.WaitAll(output, error);
-        if (process.ExitCode != 0)
-            throw new IOException($"{Path.GetFileName(executable)} meldet Fehlercode {process.ExitCode}: " + error.Result.Trim());
-    }
-
-    private static string? FindExecutable(params string[] names)
-    {
-        var folders = new List<string>();
-        string programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
-        string programFilesX86 = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
-        if (programFiles.Length > 0) folders.AddRange([Path.Combine(programFiles, "WinRAR"), Path.Combine(programFiles, "7-Zip")]);
-        if (programFilesX86.Length > 0) folders.AddRange([Path.Combine(programFilesX86, "WinRAR"), Path.Combine(programFilesX86, "7-Zip")]);
-        folders.AddRange((Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries));
-        foreach (string folder in folders.Distinct(StringComparer.OrdinalIgnoreCase))
-            foreach (string name in names)
+            string cleanup = "";
+            if (stage != null && Directory.Exists(stage))
             {
-                try { string candidate = Path.Combine(folder.Trim().Trim('"'), name); if (File.Exists(candidate)) return candidate; } catch { }
+                try { PathSafety.RejectTreeLinks(stage); Directory.Delete(stage, true); }
+                catch { cleanup = " Unvollständiger Arbeitsordner bleibt erhalten: " + stage; }
             }
-        return null;
-    }
-
-    private static string SafeFolderName(string name)
-    {
-        foreach (char invalid in Path.GetInvalidFileNameChars()) name = name.Replace(invalid, '_');
-        name = name.Trim().TrimEnd('.');
-        return name.Length == 0 ? "Entpacktes Spiel" : name;
-    }
-
-    private static string UniqueDestination(string root, string name)
-    {
-        string candidate = Path.Combine(root, name);
-        for (int index = 2; Directory.Exists(candidate) || File.Exists(candidate); index++) candidate = Path.Combine(root, $"{name} ({index})");
-        return candidate;
-    }
-
-    private static void CleanupStage(string stage)
-    {
-        try
-        {
-            if (Directory.Exists(stage) && Path.GetFileName(stage).Contains(".entpacken-", StringComparison.Ordinal))
-            {
-                PathSafety.RejectTreeLinks(stage);
-                Directory.Delete(stage, true);
-            }
+            return new(false, "", "ZIP/RAR/7z", false,
+                (ex is OperationCanceledException ? "Entpacken abgebrochen." : "Entpacken fehlgeschlagen: " + ex.Message) + " Originalarchiv bleibt erhalten." + cleanup);
         }
-        catch { }
+    }
+
+    private static string Child(string root, string key)
+    {
+        string relative = key.Replace('\\', '/').TrimEnd('/');
+        string[] parts = relative.Split('/');
+        if (parts.Length > 64 || parts.Any(p => p.Length == 0 || p is "." or ".." || p.EndsWith('.') || p.EndsWith(' ') ||
+            p.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 || IsDevice(p))) throw new IOException("Unsicherer Windows-Archivpfad.");
+        string target = Path.GetFullPath(Path.Combine(root, Path.Combine(parts)));
+        if (target.Length > 240 || !PathSafety.Within(target, root) || PathSafety.Same(target, root)) throw new IOException("Unsicherer oder zu langer Archivpfad.");
+        return target;
+    }
+    private static bool IsDevice(string part)
+    {
+        string stem = part.Split('.')[0].ToUpperInvariant();
+        return stem is "CON" or "PRN" or "AUX" or "NUL" or "CONIN$" or "CONOUT$" ||
+            (stem.Length == 4 && (stem.StartsWith("COM") || stem.StartsWith("LPT")) && "123456789¹²³".Contains(stem[3]));
     }
 }

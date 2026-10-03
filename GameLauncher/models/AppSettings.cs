@@ -4,6 +4,8 @@ namespace GameLauncher.models
 {
     public class AppSettings
     {
+        [System.Text.Json.Serialization.JsonExtensionData]
+        public Dictionary<string, System.Text.Json.JsonElement>? AdditionalData { get; set; }
         public double BackgroundFocusX { get; set; } = .5;
         public double BackgroundFocusY { get; set; } = .5;
         public bool LaunchShortcutEnabled { get; set; }
@@ -44,5 +46,8 @@ namespace GameLauncher.models
         public bool RemoteStreamingV51Migrated { get; set; }
         public bool RemoteStreamingV52Migrated { get; set; }
         public bool IsFirstRun { get; set; } = true;
+        public bool BackupBeforePlay { get; set; } = true;
+        public bool BackupAfterPlay { get; set; } = true;
+        public int BackupIntervalMinutes { get; set; }
     }
 }

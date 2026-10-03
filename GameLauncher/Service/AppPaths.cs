@@ -20,12 +20,16 @@ namespace GameLauncher.Service
             SettingsFilePath = Path.Combine(GamesDataPath, "settings.json");
         }
 
-        public static string DefaultArchivePath => Path.Combine(
+        public static string LegacyArchivePath => Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
             "Visual Studio 18",
             "GameLauncher",
             "Archive"
         );
+
+        // The development edition never opens the original 5.2 archive implicitly.
+        public static string DefaultArchivePath => Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "GameLauncher.5.2", "Archive");
 
         public static AppPaths Default()
         {

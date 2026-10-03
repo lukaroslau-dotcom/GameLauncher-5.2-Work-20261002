@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "sourceSha256": "F31ABAD2797102A4A55FE35315D7C3A116BA713E3E26D98EEF77982BEA0B8AEE",
+  "sourceCount": 42,
+  "added": 42,
+  "skipped": 0,
+  "missingInstallations": 18,
+  "repeatedAdded": 0,
+  "originalUnchanged": true,
+  "root": "C:\\Users\\shamr\\AppData\\Local\\Temp\\GameLauncher.52.Migration-b99eb2c19a594328a3c6028ca2b00ba3"
+}

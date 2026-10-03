@@ -1,4 +1,4 @@
-﻿using GameLauncher.Constants;
+using GameLauncher.Constants;
 using GameLauncher.models;
 using GameLauncher.Service;
 using Microsoft.Win32;
@@ -56,6 +56,8 @@ namespace GameLauncher
         public MainWindow()
         {
             InitializeComponent();
+            AppPaths paths = settingsService.LoadAndResolvePaths();
+            gameService = new GameService(paths);
             InitializeRemoteHost();
             _ = new WindowSizing(this);
             AddHandler(Controls.GameCard.OpenRequestedEvent,new RoutedEventHandler((sender,e) => { if(e.OriginalSource is FrameworkElement {DataContext:Game game}) ShowGameDetails(game); }));
@@ -67,9 +69,9 @@ namespace GameLauncher
             AddHandler(Controls.GameCard.DeleteRequestedEvent, new RoutedEventHandler((sender, e) => { if (e.OriginalSource is FrameworkElement { DataContext: Game game }) { selectedGame = game; OpenDeleteDialog(game); } }));
             AddHandler(Controls.GameCard.StatusChangeRequestedEvent, new RoutedEventHandler((sender, e) => { if (e is Controls.StatusChangeRoutedEventArgs args && e.OriginalSource is FrameworkElement { DataContext: Game game }) { selectedGame = game; gameService.UpdateStatus(game.Id, args.NewStatus); TrySaveGames(); RefreshGameList(); ShowToast($"Status zu \"{args.NewStatus}\" geändert."); } }));
 
-            AppPaths paths = settingsService.LoadAndResolvePaths();
-            gameService = new GameService(paths);
             InitializeF95Features();
+            InitializeBackups();
+            InitializeDownloads();
 
             lastListView = HomeView;
             toastTimer.Interval = TimeSpan.FromSeconds(4);
@@ -99,6 +101,7 @@ namespace GameLauncher
                 SetupWizard.Reset();
             }
             searchDelay.Tick += (_,_)=>{searchDelay.Stop();ApplySearch();};
+            InitializeSmoke();
             Loaded += MainWindow_Loaded;
             SizeChanged += (_, _) => UpdateCompactLayout();
 
@@ -148,6 +151,7 @@ namespace GameLauncher
             launchService.SessionEnded -= OnSessionEnded;
             launchService.Dispose();
             f95UpdateService.Dispose();
+            downloads?.Dispose();
         }
 
         protected override void OnStateChanged(EventArgs e)
@@ -386,7 +390,7 @@ namespace GameLauncher
                 CoverFocusX = GameCoverImage.FocusX, CoverFocusY = GameCoverImage.FocusY,
                 GamePath = "", ExecutablePath = "", SavePath = "",
                 IsInstalled = false, IsFavorite = GameFavoriteCheckBox.IsChecked == true,
-                Status = GameStatus.WaitingForUpdates, AddedDate = DateTime.Now
+                Status = GameStatus.Wishlist, AddedDate = DateTime.Now
             };
             if (pendingF95Metadata != null &&
                 F95UpdateService.TryExtractThreadId(game.InstallSource, out string f95ThreadId) &&
@@ -480,50 +484,18 @@ namespace GameLauncher
             ShowView(DeletedView);
         }
 
-        private async void ArchiveAndMarkGame(string newStatus, string toast)
+        private void ArchiveAndMarkGame(string newStatus, string toast)
         {
             Game? game = selectedGame;
-            if (game == null)
-                return;
-
-            if (launchService.IsRunning(game.Id))
-            {
-                ShowToast("Bitte das Spiel zuerst beenden.");
-                return;
-            }
-            if (string.IsNullOrWhiteSpace(game.SavePath) && NoSaveConfirmCheckBox.IsChecked != true)
-            {
-                ShowToast("Bitte zuerst einen Save-Ordner angeben oder bestaetigen, dass es keinen Spielstand gibt.");
-                return;
-            }
-            if (!TrySaveGames()) return;
-            if (!string.IsNullOrWhiteSpace(game.SavePath) &&
-                !await RunFileOperationAsync(() => gameService.ArchiveSave(game), "Spielstand wird archiviert ..."))
-            {
-                MessageBox.Show(
-                    $"Der Spielstand von \"{game.Name}\" konnte nicht archiviert werden.\n\nDas Spiel wurde NICHT gelöscht.",
-                    "Fehler",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-                return;
-            }
-
-            string error = "";
-            if (!await RunFileOperationAsync(() => gameService.TryDeleteInstallation(game, out error), "Installation wird entfernt ..."))
-            {
-                MessageBox.Show(error, "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
+            if (game == null) return;
+            string previous = game.Status;
             gameService.UpdateStatus(game.Id, newStatus);
-            TrySaveGames();
+            if (!TrySaveGames()) { game.Status = previous; return; }
             RefreshGameList();
             DeleteGameDialog.Visibility = Visibility.Collapsed;
-            selectedGame = null;
             ShowView(lastListView ?? HomeView);
-            ShowToast(toast);
+            ShowToast(toast + " Installation und Spielstände bleiben erhalten.");
         }
-
         private void CloseDeleteDialogButton_Click(object sender, RoutedEventArgs e)
         {
             DeleteGameDialog.Visibility = Visibility.Collapsed;
@@ -960,7 +932,7 @@ namespace GameLauncher
             ShowView(lastListView ?? HomeView);
         }
 
-        private void PlayGame(Game? game)
+        private async void PlayGame(Game? game)
         {
             if (game == null)
                 return;
@@ -971,6 +943,9 @@ namespace GameLauncher
                 return;
             }
 
+            if (fileOperationActive) return;
+            if (settingsService.Settings.BackupBeforePlay && Directory.Exists(game.SavePath) && !await BackupGameAsync(game))
+            { ShowToast("Sicherung vor Spielstart fehlgeschlagen. Spiel wurde nicht gestartet."); return; }
             if (!launchService.TryLaunch(game))
                 return;
 
@@ -1006,6 +981,7 @@ namespace GameLauncher
                     _ = FinishSaveProbeAsync(probe);
                     return;
                 }
+                if (settingsService.Settings.BackupAfterPlay && Directory.Exists(game.SavePath)) _ = BackupAfterSessionAsync(game);
                 game.Playtime += duration;
                 TrySaveGames();
                 RefreshGameList();
@@ -1071,7 +1047,7 @@ namespace GameLauncher
             {
                 try
                 {
-                    gameService.ArchiveSave(selectedGame);
+                    if (!gameService.ArchiveSave(selectedGame)) { ShowToast("Spielstand konnte nicht gesichert werden; Update nicht gestartet."); return; }
                     ShowToast("Spielstand wurde vor dem Update gesichert.");
                 }
                 catch { }
@@ -1196,6 +1172,7 @@ namespace GameLauncher
 
             libraryFilter = tag switch
             {
+                "Wishlist" => GameListFilter.Wishlist,
                 "Installed" => GameListFilter.Installed,
                 "Waiting" => GameListFilter.WaitingForUpdates,
                 "Finished" => GameListFilter.Finished,
@@ -1452,7 +1429,11 @@ namespace GameLauncher
             if (dialog.ShowDialog() != true)
                 return;
 
-            var (added, skipped, error) = importService.ImportGamesJson(dialog.FileName, gameService);
+            ImportService.ImportPreview preview;
+            try { preview = importService.Preview(dialog.FileName, gameService); }
+            catch (Exception ex) { MessageBox.Show(ex.Message, "Importvorschau"); return; }
+            if (MessageBox.Show($"{preview.Games} Spiele · {preview.ExistingIds} bereits bekannte IDs · {preview.MissingInstallations} fehlende Installationsordner.\n\nDas Original wird kopiert. Bestehende Einträge werden nicht überschrieben. Importieren?", "Importvorschau", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
+            var (added, skipped, error) = importService.ImportGamesJson(dialog.FileName, gameService, preview.Sha256);
             if (error != null)
             {
                 MessageBox.Show(error, "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -1583,7 +1564,7 @@ namespace GameLauncher
 
         private async void SaveSettingsButton_Click(object sender, RoutedEventArgs e)
         {
-            if (launchService.HasRunningGames)
+            if (launchService.HasRunningGames || downloads?.IsActive == true || fileOperationActive || f95UpdateRunning)
             {
                 ShowToast("Einstellungen nach Spielende speichern.");
                 return;
@@ -1646,6 +1627,7 @@ namespace GameLauncher
                 if (!PathSafety.Same(gameService.Paths.ArchivePath, newPaths.ArchivePath))
                 {
                     gameService.UsePaths(newPaths);
+                    InitializeDownloads();
                     selectedGame = null;
                     reinstallGame = null;
                 }
@@ -1821,6 +1803,8 @@ namespace GameLauncher
         private void ShowView(UIElement view)
         {
             if (view != AddGameView && AddGameView.Visibility == Visibility.Visible) ResetForm();
+            DownloadsPageHost.Visibility = Visibility.Collapsed;
+            BackupsPageHost.Visibility = Visibility.Collapsed;
             HomeView.Visibility = Visibility.Collapsed;
             LibraryView.Visibility = Visibility.Collapsed;
             AvailableUpdatesView.Visibility = Visibility.Collapsed;

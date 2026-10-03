@@ -17,6 +17,7 @@ namespace GameLauncher.Constants
         Favorites,
         NeedsAttention,
         UpdatesAvailable,
-        NeverPlayed
+        NeverPlayed,
+        Wishlist
     }
 }

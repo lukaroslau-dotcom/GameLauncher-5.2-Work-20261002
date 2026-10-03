@@ -24,7 +24,7 @@ internal static class UiChecks
         var paths = AppPaths.Default();
         if (!Environment.GetCommandLineArgs().Contains("--data-root") || !PathSafety.Within(paths.ArchivePath,Path.GetTempPath())) throw new Exception("UI tests require an isolated temporary data root.");
         paths.EnsureCreated();
-        var settings = new AppSettings { ArchivePath = paths.ArchivePath, KeyboardShortcutEnabled = false, AutoDiscoveryEnabled = false, ReduceMotion = true };
+        var settings = new AppSettings { ArchivePath = paths.ArchivePath, KeyboardShortcutEnabled = false, AutoDiscoveryEnabled = false, F95UpdateChecksEnabled = false, IsFirstRun = false, ReduceMotion = true };
         File.WriteAllText(paths.SettingsFilePath,JsonSerializer.Serialize(settings));
         var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
         var window = new MainWindow { Title = "GameLauncher · UI-Prüfung" };
@@ -74,7 +74,7 @@ internal static class UiChecks
                 Call("SettingsNavigationButton_Click",window,new RoutedEventArgs()); Pump();
                 Check(!string.IsNullOrWhiteSpace(Find<TextBox>("SettingsManagedGameFolderTextBox").Text) &&
                     Find<CheckBox>("SettingsManageGamesCheckBox").IsChecked==true &&
-                    Find<CheckBox>("SettingsF95UpdatesCheckBox").IsChecked==true,
+                    Find<CheckBox>("SettingsF95UpdatesCheckBox").IsChecked==settings.F95UpdateChecksEnabled,
                     "Managed GameLibrary controls load their saved defaults");
                 Check(Find<Slider>("SettingsRemoteFpsSlider").Maximum==60 &&
                     Find<Slider>("SettingsRemoteWidthSlider").Minimum==1280 &&
@@ -92,9 +92,15 @@ internal static class UiChecks
             Check(Find<RadioButton>("NavUpdatesButton") != null, "Bottom navigation survives large UI scale");
             settingsService.Settings.UiScale=1; Call("ApplyPresentation");
             var service=(GameService)typeof(MainWindow).GetField("gameService",flags)!.GetValue(window)!;
-            for (int i=0;i<120;i++) service.AddGame(new Game {Id="ui-"+i,Name=i==0?"Eine sehr lange Spielbezeichnung mit vielen Wörtern und Sonderzeichen äöü": "Spiel "+i.ToString("000"),GameVersion="1.0",Notes="Notizen bleiben erhalten.",VersionInfo="Build 42",LastPlayed=i<4?DateTime.Now.AddDays(-i):null,Playtime=TimeSpan.FromHours(i),IsFavorite=i%3==0});
+            string[] testArgs = Environment.GetCommandLineArgs();
+            int coverIndex = Array.IndexOf(testArgs, "--fixture-covers");
+            string[] covers = coverIndex >= 0 && coverIndex + 1 < testArgs.Length ? Directory.GetFiles(testArgs[coverIndex + 1]).Take(5).ToArray() : Array.Empty<string>();
+            foreach (string cover in covers) _ = ImageCache.Load(cover,640).GetAwaiter().GetResult();
+            for (int i=0;i<120;i++) service.AddGame(new Game {Id="ui-"+i,CoverPath=covers.Length>0?covers[i%covers.Length]:"",Name=i==0?"Eine sehr lange Spielbezeichnung mit vielen Wörtern und Sonderzeichen äöü": "Spiel "+i.ToString("000"),GameVersion="1.0",Notes="Notizen bleiben erhalten.",VersionInfo="Build 42",LastPlayed=i<4?DateTime.Now.AddDays(-i):null,Playtime=TimeSpan.FromHours(i),IsFavorite=i%3==0});
             Call("RefreshGameList"); Call("HomeNavigationButton_Click",window,new RoutedEventArgs()); Pump(); Shot("dashboard");
             Call("LibraryNavigationButton_Click",window,new RoutedEventArgs()); Pump(); Shot("library");
+            var nav = Find<Border>("FloatingBottomNav");
+            Check(nav.TransformToAncestor(window).Transform(new Point()).Y > window.ActualHeight / 2, "Floating navigation stays at the bottom without covering search");
             var gameList=Find<ItemsControl>("LibraryItemsControl");
             var virtualPanel=Descendant<GameLauncher.Controls.VirtualizingGamePanel>(gameList);
             Check(virtualPanel!=null&&virtualPanel.Children.Count<40,"Large library realizes only visible card rows");
@@ -176,6 +182,13 @@ internal static class UiChecks
             Call("GameDetailCoverImage_CropChanged",detailCrop,EventArgs.Empty);
             Check(Math.Abs(archived.CoverFocusX-.82)<.001&&Math.Abs(archived.CoverFocusY-.24)<.001,
                 "Dragging detail artwork persists its crop position");
+            Call("BackupsNavigation_Click",window,new RoutedEventArgs()); Pump(); Shot("backups");
+            Check(Find<Grid>("BackupsPageHost").IsVisible, "Backups navigation opens connected view");
+            Call("DownloadsNavigation_Click",window,new RoutedEventArgs()); Pump(); Shot("downloads");
+            Check(Find<Grid>("DownloadsPageHost").IsVisible, "Downloads navigation opens connected view");
+            Call("LibraryNavigationButton_Click",window,new RoutedEventArgs()); Pump();
+            var converter = new GameLauncher.Converters.CardWidthConverter();
+            Check((double)converter.Convert(1920d,typeof(double),null!,System.Globalization.CultureInfo.InvariantCulture) >= 368, "Wide libraries keep at most five medium landscape cards");
             Call("OpenDeleteDialog",service.GetGames()[0]); Pump(); Shot("archive-dialog");
             Call("CloseDeleteDialogButton_Click",window,new RoutedEventArgs());
             Call("SettingsNavigationButton_Click",window,new RoutedEventArgs());

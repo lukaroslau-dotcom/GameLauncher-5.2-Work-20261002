@@ -1,4 +1,4 @@
-﻿using GameLauncher.Constants;
+using GameLauncher.Constants;
 using GameLauncher.models;
 using System.Diagnostics;
 using System.IO;
@@ -49,7 +49,10 @@ namespace GameLauncher.Service
                 if (Directory.Exists(destination.ArchivePath) && Directory.EnumerateFileSystemEntries(destination.ArchivePath).Any())
                     throw new IOException("Bitte einen leeren Zielordner waehlen.");
                 SaveGames();
+                var originalFiles = VerifiedSaveBackup.Snapshot(paths.ArchivePath);
                 PathSafety.CopyTree(paths.ArchivePath, destination.ArchivePath);
+                VerifiedSaveBackup.AssertEqual(originalFiles, VerifiedSaveBackup.Snapshot(destination.ArchivePath));
+                VerifiedSaveBackup.AssertEqual(originalFiles, VerifiedSaveBackup.Snapshot(paths.ArchivePath));
                 var copied = JsonSerializer.Deserialize<List<Game>>(File.ReadAllText(destination.GamesFilePath))!;
                 foreach (var game in copied)
                 {
@@ -59,6 +62,7 @@ namespace GameLauncher.Service
                         ?Path.Combine(destination.ArchivePath,Path.GetRelativePath(paths.ArchivePath,path)):path).ToList();
                 }
                 File.WriteAllText(destination.GamesFilePath, JsonSerializer.Serialize(copied, JsonOptions));
+                File.Copy(destination.GamesFilePath, destination.GamesFilePath + ".bak", true);
                 return true;
             }
             catch (Exception ex) { Debug.WriteLine(ex); error = ex.Message; return false; }
@@ -113,6 +117,7 @@ namespace GameLauncher.Service
 
             query = filter switch
             {
+                GameListFilter.Wishlist => games.Where(g => g.Status == GameStatus.Wishlist),
                 GameListFilter.Installed => games.Where(g =>
                     g.IsInstalled && g.Status == GameStatus.Installed),
                 GameListFilter.WaitingForUpdates => games.Where(g =>
@@ -135,7 +140,8 @@ namespace GameLauncher.Service
             if (!string.IsNullOrWhiteSpace(search))
             {
                 string searchTerm = search.Trim();
-                query = query.Where(g => MatchesSearch(g, searchTerm));
+                var exact = query.Where(g => MatchesSearch(g, searchTerm, false)).ToList();
+                query = exact.Count > 0 ? exact : query.Where(g => MatchesSearch(g, searchTerm));
             }
 
             return query
@@ -237,7 +243,7 @@ namespace GameLauncher.Service
                 return;
 
             existing.Status = GameStatus.Normalize(newStatus);
-            existing.IsInstalled = existing.Status == GameStatus.Installed;
+            // Status is independent of installed files; no path or installation mutation.
         }
 
         public void EditGame(string selectedGameID, Game updatedGame)
@@ -273,6 +279,8 @@ namespace GameLauncher.Service
 
         public void ApplyReinstall(Game game, string gamePath, string executablePath, string savePath)
         {
+            if (!string.IsNullOrWhiteSpace(game.GamePath) && !PathSafety.Same(game.GamePath, gamePath))
+                game.InstallationHistory.Add(new(game.GamePath, game.ExecutablePath, game.SavePath, game.GameVersion, DateTime.UtcNow));
             game.GamePath = gamePath;
             game.ExecutablePath = executablePath;
             game.SavePath = savePath;
@@ -298,9 +306,11 @@ namespace GameLauncher.Service
                 if (PathSafety.Overlaps(game.SavePath, paths.ArchivePath)) return false;
                 string archive = paths.GetSaveArchiveForGame(game.Id);
                 string stage = archive + ".pending-" + Guid.NewGuid().ToString("N");
-                PathSafety.CopyTree(game.SavePath, stage);
+                VerifiedSaveBackup.Create(game.SavePath, stage);
                 string history = Path.Combine(paths.ArchivePath, "SaveHistory", game.Id);
                 CommitDirectory(stage, archive, history);
+                try { VerifiedSaveBackup.RetireOlder(history, Path.Combine(paths.ArchivePath, "RetiredSaves", game.Id)); }
+                catch (Exception retentionError) { Debug.WriteLine(retentionError); } // A verified backup is never discarded on retention failure.
                 return true;
             }
             catch (Exception ex) { Debug.WriteLine(ex); return false; }
@@ -358,7 +368,7 @@ namespace GameLauncher.Service
                 PathSafety.RejectLinks(target);
                 string stage = target + ".pending-" + Guid.NewGuid().ToString("N");
                 if (mode == SaveRestoreMode.Merge && Directory.Exists(target)) PathSafety.CopyTree(target, stage);
-                PathSafety.CopyTree(source, stage);
+                VerifiedSaveBackup.CopyPayload(source, stage);
                 CommitDirectory(stage, target);
                 return true;
             }
@@ -391,7 +401,8 @@ namespace GameLauncher.Service
 
             try
             {
-                Directory.Delete(game.GamePath, true);
+                InstallationRecovery.Remove(paths, game);
+                game.IsInstalled = false;
                 return true;
             }
             catch (Exception ex)
@@ -456,6 +467,10 @@ namespace GameLauncher.Service
             game.F95Status ??= "";
             game.ModUrl ??= "";
             game.GalleryPaths ??= new();
+            game.InstallationHistory ??= new();
+            game.Aliases ??= new();
+            game.Tags ??= new();
+            game.LaunchArguments ??= "";
             game.GalleryPaths=game.GalleryPaths.Where(path=>!string.IsNullOrWhiteSpace(path)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
             if (!F95UpdateService.TryExtractThreadId(game.InstallSource, out _))
             {
@@ -470,7 +485,7 @@ namespace GameLauncher.Service
             game.UpdateAvailable = F95UpdateService.TryExtractThreadId(game.InstallSource, out _) &&
                 F95UpdateService.IsUpdateAvailable(game.GameVersion, game.LatestKnownVersion, game.IgnoredUpdateVersion);
             game.Status = GameStatus.Normalize(game.Status);
-            game.IsInstalled = game.Status == GameStatus.Installed;
+            game.IsInstalled = game.IsInstalled || (game.Status == GameStatus.Installed && game.ExecutablePath.Length > 0);
             if (game.Playtime < TimeSpan.Zero) game.Playtime = TimeSpan.Zero;
             if (game.AddedDate == default || game.AddedDate == DateTime.MinValue)
                 game.AddedDate = game.LastPlayed ?? DateTime.MinValue;
@@ -534,9 +549,9 @@ namespace GameLauncher.Service
             catch (Exception ex) { Debug.WriteLine($"Temporäres Cover konnte nicht entfernt werden: {ex.Message}"); }
         }
 
-        private static bool MatchesSearch(Game game, string searchTerm)
+        private static bool MatchesSearch(Game game, string searchTerm, bool allowFuzzy = true)
         {
-            return game.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+            return LocalGameSearch.Matches(game, searchTerm, allowFuzzy) ||
                    game.GameVersion.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
                    game.LatestKnownVersion.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
                    game.F95Developer.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||

@@ -122,7 +122,7 @@ public partial class GameCard : UserControl
     private void CtxFavorite_Click(object sender, RoutedEventArgs e) => RaiseEvent(new RoutedEventArgs(FavoriteRequestedEvent, this));
     private void CtxStatus_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is MenuItem { Tag: string newStatus })
+        if (sender is System.Windows.Controls.MenuItem { Tag: string newStatus })
             RaiseEvent(new StatusChangeRoutedEventArgs(StatusChangeRequestedEvent, this, newStatus));
     }
 }

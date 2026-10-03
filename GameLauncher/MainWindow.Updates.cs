@@ -63,7 +63,7 @@ public partial class MainWindow
 
     private async Task CheckF95UpdatesAsync(bool manual)
     {
-        if (f95UpdateRunning) return;
+        if (f95UpdateRunning || fileOperationActive) return;
         if (quietMode && !manual) return;
         if (launchService.HasRunningGames && manual)
         {

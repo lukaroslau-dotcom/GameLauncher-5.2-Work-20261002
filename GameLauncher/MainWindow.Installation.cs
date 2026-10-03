@@ -260,9 +260,9 @@ public partial class MainWindow
         ArchiveExtractionResult? result = null;
         bool success = await RunFileOperationAsync(() =>
         {
-            result = ArchiveExtractionService.ExtractAndDelete(archive, root, CancellationToken.None);
+            result = ArchiveExtractionService.Extract(archive, root, fileOperationCancellation!.Token);
             return result.Success;
-        }, "Spiel wird mit WinRAR oder Windows entpackt …");
+        }, "Spielarchiv wird geprüft und entpackt …", true);
         if (!success || result == null)
         {
             ShowToast(result?.Error ?? "Das Archiv konnte nicht entpackt werden.");
@@ -310,6 +310,6 @@ public partial class MainWindow
         }
         ShowToast(extracted.Result.SourceDeleted
             ? $"Mit {extracted.Result.Tool} entpackt; das Archiv wurde gelöscht."
-            : extracted.Result.Error);
+            : "Entpackt; das Originalarchiv bleibt erhalten.");
     }
 }

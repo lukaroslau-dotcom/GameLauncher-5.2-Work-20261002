@@ -1,4 +1,4 @@
-﻿using System.Windows;
+using System.Windows;
 
 namespace GameLauncher
 {
@@ -11,8 +11,12 @@ namespace GameLauncher
 
         protected override void OnStartup(StartupEventArgs e)
         {
+            if (e.Args.Contains("--verify-startup") && (!e.Args.Contains("--data-root") || !Service.PathSafety.Within(Service.AppPaths.Default().ArchivePath, System.IO.Path.GetTempPath())))
+                throw new System.IO.IOException("Startprüfung erfordert einen isolierten temporären Datenordner.");
+            DispatcherUnhandledException += (_, failure) => { Service.EventLog.Write("dispatcher", "Unhandled UI exception", failure.Exception); };
+            AppDomain.CurrentDomain.UnhandledException += (_, failure) => Service.EventLog.Write("process", "Unhandled process exception", failure.ExceptionObject as Exception);
             string identity = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
-                System.Text.Encoding.UTF8.GetBytes(Service.AppPaths.Default().ArchivePath.ToUpperInvariant())))[..20];
+                System.Text.Encoding.UTF8.GetBytes(new Service.SettingsService().LoadAndResolvePaths().ArchivePath.ToUpperInvariant())))[..20];
             instanceMutex = new Mutex(true, "Local\\GameLauncher-" + identity, out ownsMutex);
             showRequest = new EventWaitHandle(false, EventResetMode.AutoReset, "Local\\GameLauncher-Show-" + identity);
             if (!ownsMutex)

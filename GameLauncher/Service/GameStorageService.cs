@@ -44,10 +44,10 @@ public static class GameStorageService
             }
             else
             {
+                var original = VerifiedSaveBackup.Snapshot(source);
                 CopyTree(source, stage, cancellation);
-                var original = TreeStats(source, cancellation);
-                var copy = TreeStats(stage, cancellation);
-                if (original != copy) throw new IOException("Die kopierten Spieldateien konnten nicht vollständig geprüft werden.");
+                VerifiedSaveBackup.AssertEqual(original, VerifiedSaveBackup.Snapshot(stage));
+                VerifiedSaveBackup.AssertEqual(original, VerifiedSaveBackup.Snapshot(source));
                 Directory.Move(stage, destination);
                 try { PathSafety.RejectTreeLinks(source); Directory.Delete(source, true); }
                 catch (Exception ex)

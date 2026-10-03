@@ -29,8 +29,8 @@ public sealed class GameLaunchService : IDisposable
         lock (gate)
         {
             if (sessions.ContainsKey(game.Id)) return false;
-            if (!game.IsInstalled || game.Status != GameStatus.Installed ||
-                !File.Exists(game.ExecutablePath) || !Directory.Exists(game.GamePath))
+            if (!game.IsInstalled || game.Status == GameStatus.Deleted ||
+                !File.Exists(game.ExecutablePath) || !Directory.Exists(game.GamePath) || !PathSafety.Within(game.ExecutablePath, game.GamePath))
             {
                 LaunchFailed?.Invoke("Die Installation ist nicht verfuegbar. Bitte die Spielpfade pruefen.");
                 return false;
@@ -41,6 +41,7 @@ public sealed class GameLaunchService : IDisposable
                 {
                     FileName = game.ExecutablePath,
                     WorkingDirectory = Path.GetDirectoryName(game.ExecutablePath)!,
+                    Arguments = game.LaunchArguments,
                     // Let Windows handle application manifests, SmartScreen and UAC.
                     // Starting directly used to turn those normal consent flows into a
                     // launcher error for games that require elevation.

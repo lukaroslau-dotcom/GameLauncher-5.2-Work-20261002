@@ -18,8 +18,8 @@ public sealed class VirtualizingGamePanel : VirtualizingPanel, IScrollInfo
         var owner=ItemsControl.GetItemsOwner(this);
         if(owner==null)return new Size();
         viewport=new Size(double.IsInfinity(available.Width)?800:available.Width,double.IsInfinity(available.Height)?600:available.Height);
-        columns=Math.Max(1,(int)(viewport.Width/320));cellWidth=viewport.Width/columns;
-        RowHeight=Math.Ceiling(Math.Max(0,cellWidth-32)*9/16)+198;
+        columns=Math.Clamp((int)(viewport.Width/300),1,5);cellWidth=viewport.Width/columns;
+        RowHeight=Math.Ceiling(Math.Max(0,cellWidth-32)*9/16)+108;
         extent=new Size(viewport.Width,Math.Ceiling(owner.Items.Count/(double)columns)*RowHeight);
         offset=Math.Clamp(offset,0,Math.Max(0,extent.Height-viewport.Height));ScrollOwner?.InvalidateScrollInfo();
         int first=Math.Max(0,((int)(offset/RowHeight)-1)*columns);

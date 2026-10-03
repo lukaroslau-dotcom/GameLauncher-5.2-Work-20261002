@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 
@@ -6,6 +6,12 @@ namespace GameLauncher.models
 {
     public class Game : INotifyPropertyChanged
     {
+        [JsonExtensionData]
+        public Dictionary<string, System.Text.Json.JsonElement>? AdditionalData { get; set; }
+        public List<InstallationVersion> InstallationHistory { get; set; } = new();
+        public string LaunchArguments { get; set; } = "";
+        public List<string> Aliases { get; set; } = new();
+        public List<string> Tags { get; set; } = new();
         private string id = "";
         private string name = "";
         private double coverFocusX=.5, coverFocusY=.5;

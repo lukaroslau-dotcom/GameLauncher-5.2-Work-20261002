@@ -17,6 +17,8 @@ public static class PathSafety
 
     public static void RejectLinks(string path)
     {
+        if (File.Exists(path) && (File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0)
+            throw new IOException("Verknüpfte Dateien werden nicht unterstützt.");
         for (DirectoryInfo? directory = new DirectoryInfo(Full(path)); directory != null; directory = directory.Parent)
             if (directory.Exists && (directory.Attributes & FileAttributes.ReparsePoint) != 0)
                 throw new IOException("Verknuepfte Ordner werden fuer Dateioperationen nicht unterstuetzt.");
@@ -33,12 +35,14 @@ public static class PathSafety
 
     private static void CopyContents(string source, string destination, bool overwrite)
     {
+        RejectLinks(destination);
         Directory.CreateDirectory(destination);
         foreach (var entry in new DirectoryInfo(source).EnumerateFileSystemInfos())
         {
             if ((entry.Attributes & FileAttributes.ReparsePoint) != 0)
                 throw new IOException("Der Ordner enthaelt eine Verknuepfung: " + entry.Name);
             string target = Path.Combine(destination, entry.Name);
+            RejectLinks(target);
             if (entry is DirectoryInfo)
                 CopyContents(entry.FullName, target, overwrite);
             else

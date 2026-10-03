@@ -1,0 +1,92 @@
+[
+  {
+    "run": 1,
+    "root": "C:\\Users\\shamr\\AppData\\Local\\Temp\\GameLauncher.52.Start-9552253c48254a038ead522e088d9b48",
+    "exitCode": 0,
+    "result": {
+      "passed": true,
+      "checks": [
+        "Native WPF window rendered",
+        "Navigation: home",
+        "Navigation: library",
+        "Navigation: settings",
+        "Navigation: backups",
+        "Navigation: downloads",
+        "Navigation: add",
+        "Game child tracked after parent exits",
+        "Gaming quiet mode hides UI and pauses background work",
+        "Game end restores launcher",
+        "Game time accounted once through child session"
+      ],
+      "metrics": {
+        "startupIdle": {
+          "elapsedSeconds": 3.0086516,
+          "cpuPercentOfOneCore": 54.52992487608557,
+          "workingSetBytes": 147369984,
+          "privateBytes": 81035264,
+          "logicalProcessors": 4
+        },
+        "settledIdle": {
+          "elapsedSeconds": 3.0084611,
+          "cpuPercentOfOneCore": 9.348575006268115,
+          "workingSetBytes": 150196224,
+          "privateBytes": 76832768,
+          "logicalProcessors": 4
+        },
+        "gamingQuiet": {
+          "elapsedSeconds": 3.0068247,
+          "cpuPercentOfOneCore": 2.598245956996261,
+          "workingSetBytes": 168767488,
+          "privateBytes": 85635072,
+          "logicalProcessors": 4
+        },
+        "playtimeSeconds": 16.1975512
+      }
+    }
+  },
+  {
+    "run": 2,
+    "root": "C:\\Users\\shamr\\AppData\\Local\\Temp\\GameLauncher.52.Start-cdbd55b69a8f42b1b5caa7694e02c8f1",
+    "exitCode": 0,
+    "result": {
+      "passed": true,
+      "checks": [
+        "Native WPF window rendered",
+        "Navigation: home",
+        "Navigation: library",
+        "Navigation: settings",
+        "Navigation: backups",
+        "Navigation: downloads",
+        "Navigation: add",
+        "Game child tracked after parent exits",
+        "Gaming quiet mode hides UI and pauses background work",
+        "Game end restores launcher",
+        "Game time accounted once through child session"
+      ],
+      "metrics": {
+        "startupIdle": {
+          "elapsedSeconds": 3.0148141,
+          "cpuPercentOfOneCore": 70.4848538663231,
+          "workingSetBytes": 164630528,
+          "privateBytes": 89092096,
+          "logicalProcessors": 4
+        },
+        "settledIdle": {
+          "elapsedSeconds": 3.0101585,
+          "cpuPercentOfOneCore": 47.235652512099556,
+          "workingSetBytes": 171696128,
+          "privateBytes": 93069312,
+          "logicalProcessors": 4
+        },
+        "gamingQuiet": {
+          "elapsedSeconds": 3.0091432,
+          "cpuPercentOfOneCore": 2.0769865470756645,
+          "workingSetBytes": 186089472,
+          "privateBytes": 97783808,
+          "logicalProcessors": 4
+        },
+        "playtimeSeconds": 16.1466834
+      }
+    }
+  }
+]

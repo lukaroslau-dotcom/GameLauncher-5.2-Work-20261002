@@ -12,7 +12,7 @@ public static class LauncherShortcutService
     public static void Apply(bool enabled,string key)
     {
         if(Environment.GetCommandLineArgs().Contains("--data-root"))return;
-        string path=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Programs),"GameLauncher starten.lnk");
+        string path=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Programs),"GameLauncher 5.2 starten.lnk");
         if(!enabled){if(File.Exists(path))File.Delete(path);return;}
         string exe=Path.Combine(AppContext.BaseDirectory,"GameLauncher.exe");
         if(!File.Exists(exe))throw new IOException("Die Startkombination bitte in der fertigen GameLauncher.exe einrichten.");
