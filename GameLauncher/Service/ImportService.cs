@@ -20,8 +20,9 @@ namespace GameLauncher.Service
         public int Confidence { get; set; } = 30;
         public bool IsArchive => ArchivePath.Length > 0;
         public string DisplayPath => IsArchive ? ArchivePath : ExecutablePath;
-        public string ActionLabel => IsArchive ? "Entpacken" : "Hinzufügen";
-        public string DetectionLabel => IsArchive ? Source + " · wird in den Spieleordner entpackt" :
+        public string AssociationHint {get;set;} = "";
+        public string ActionLabel => AssociationHint.Length>0&&!IsArchive?"Zuordnen":IsArchive ? "Entpacken" : "Hinzufügen";
+        public string DetectionLabel => AssociationHint.Length>0?AssociationHint:IsArchive ? Source + " · wird in den Spieleordner entpackt" :
             Confidence >= 90 ? Source + " · Spiel erkannt" : Source + " · Bitte prüfen";
     }
 

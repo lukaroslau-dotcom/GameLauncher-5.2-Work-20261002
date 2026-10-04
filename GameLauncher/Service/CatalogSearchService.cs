@@ -7,7 +7,8 @@ using System.Text.Json;
 using GameLauncher.models;
 namespace GameLauncher.Service;
 
-public sealed record CatalogResult(string Id, string Title, string Creator, string Source);
+public sealed record CatalogResult(string Id, string Title, string Creator, string Source)
+{ public string CoverUrl {get;init;} = ""; public string Version {get;init;} = ""; }
 public sealed record CatalogResponse(IReadOnlyList<CatalogResult> Results, bool FromCache, string Notice);
 /// <summary>Extension boundary: an authorized account adapter can implement this without changing library or downloads.</summary>
 public interface IGameCatalogProvider
@@ -45,7 +46,9 @@ public sealed class F95CatalogProvider : IGameCatalogProvider, IDisposable
             string Field(string key)=>row.TryGetProperty(key,out var value)?WebUtility.HtmlDecode(value.ToString()).Trim():"";
             string id=Field("thread_id"),title=Field("title"),creator=Field("creator");
             if(id.Length is <1 or >20 || !id.All(char.IsAsciiDigit) || id.All(c=>c=='0') || title.Length is <1 or >500)continue;
-            result.Add(new(id,title,creator.Length>300?creator[..300]:creator,"https://f95zone.to/threads/"+id+"/"));
+            string cover=Field("cover"),version=Field("version");
+            if(cover.Length>2048||!Uri.TryCreate(cover,UriKind.Absolute,out var coverUri)||coverUri.Scheme!="https")cover="";
+            result.Add(new(id,title,creator.Length>300?creator[..300]:creator,"https://f95zone.to/threads/"+id+"/"){CoverUrl=cover,Version=version.Length<=100?version:""});
         }
         return result.DistinctBy(r=>r.Id).ToList();
     }
@@ -77,6 +80,11 @@ public sealed class CatalogSearchService(string root, IGameCatalogProvider provi
     public static Game Remember(GameService service,CatalogResult result,string query)
     {
         var existing=service.GetGames().FirstOrDefault(g=>g.F95ThreadId==result.Id || g.InstallSource==result.Source);
+        if(existing==null)
+        {
+            var wishes=service.GetGames().Where(g=>!g.IsInstalled&&g.Status==Constants.GameStatus.Wishlist&&string.IsNullOrWhiteSpace(g.F95ThreadId)&&SmartAssociation.Key(g.Name)==SmartAssociation.Key(result.Title)).ToList();
+            if(wishes.Count==1){existing=wishes[0];existing.F95ThreadId=result.Id;existing.InstallSource=result.Source;}
+        }
         if(existing!=null){existing.SearchIntentUtc=DateTime.UtcNow;if(SmartAssociation.Key(query)==SmartAssociation.Key(result.Title)&&!existing.Aliases.Contains(query,StringComparer.OrdinalIgnoreCase))existing.Aliases.Add(query);return existing;}
         var game=new Game {Id=Guid.NewGuid().ToString(),Name=result.Title,F95ThreadId=result.Id,F95Developer=result.Creator,InstallSource=result.Source,Status=Constants.GameStatus.Wishlist,IsInstalled=false,AddedDate=DateTime.Now,SearchIntentUtc=DateTime.UtcNow};
         // Only an exact title query can become a matching alias; broad search terms are never aliases.

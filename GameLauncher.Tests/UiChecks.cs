@@ -113,7 +113,7 @@ internal static class UiChecks
             card!.RaiseEvent(wheel);
             var scrollTimeout=System.Diagnostics.Stopwatch.StartNew();while(scrollTimeout.ElapsedMilliseconds<300){Pump();Thread.Sleep(10);}
             Check(wheel.Handled&&virtualPanel!.VerticalOffset>0&&virtualPanel.VerticalOffset<=120,"Wheel scroll interpolates bounded pixel movement without losing virtualization");
-            virtualPanel.SetVerticalOffset(0);Pump();settingsService.Settings.ReduceMotion=true;Call("ApplyPresentation");
+            virtualPanel!.SetVerticalOffset(0);Pump();settingsService.Settings.ReduceMotion=true;Call("ApplyPresentation");
             var sizeText = (TextBlock)card!.FindName("InstalledSizeText");
             var originalContext = card.DataContext;
             string sizeFolder = Path.Combine(paths.ArchivePath, "SizeFixture");
@@ -202,23 +202,45 @@ internal static class UiChecks
             Call("SettingsNavigationButton_Click",window,new RoutedEventArgs());
             settingsService.Settings.UiScale=2; Call("ApplyPresentation");
             Call("OpenAddGameButton_Click",window,new RoutedEventArgs()); Pump(); Shot("form-scale-200");
-            var originalFactory=CatalogProviders.Create;CatalogProviders.Create=()=>new UiCatalogProvider();Exception? catalogFailure=null;
-            window.Dispatcher.BeginInvoke(new Action(()=>
+            settingsService.Settings.UiScale=1;Call("ApplyPresentation");
+            string catalogCover=Path.Combine(paths.GamesDataPath,"Covers","catalog-42.png");Directory.CreateDirectory(Path.GetDirectoryName(catalogCover)!);File.Copy(Path.Combine(paths.ArchivePath,"library.png"),catalogCover,true);
+            var originalFactory=CatalogProviders.Create;CatalogProviders.Create=()=>new UiCatalogProvider();
+            typeof(MainWindow).GetField("CatalogMetadataLoader",flags)!.SetValue(window,(Func<string,CancellationToken,Task<F95Metadata>>)((source,token)=>Task.FromResult(new F95Metadata("42","Fixture","1.2","Studio","Active","",Array.Empty<string>()){Tags=new[]{"adventure"}})));
+            try
             {
-                var catalog=app.Windows.Cast<Window>().Single(w=>w.Title=="Spiele nach Namen suchen");
-                try
-                {
-                    var box=Descendant<TextBox>(catalog)!;box.Text="Fixture";
-                    var panel=(DockPanel)catalog.Content;var top=(StackPanel)panel.Children[0];
-                    top.Children.OfType<Button>().First().RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-                    Check(Descendant<ListBox>(catalog)!.Items.Count==1,"Catalog dialog connects search provider results without browser or credentials");
-                }
-                catch(Exception ex){catalogFailure=ex;}
-                finally{catalog.Close();}
-            }),DispatcherPriority.ApplicationIdle);
-            try{Call("SearchCatalog_Click",window,new RoutedEventArgs());if(catalogFailure!=null)throw catalogFailure;}
+                Find<TextBox>("GamePathTextBox").Text="Preserved local input";
+                Call("SearchCatalog_Click",window,new RoutedEventArgs());Pump();
+                Check(app.Windows.Count==1&&Find<Grid>("CatalogPageHost").IsVisible,"Catalog is a page without a second window");
+                Find<TextBox>("CatalogQuery").Text="Fixture";
+                Call("CatalogSearch_Click",window,new RoutedEventArgs());Pump();
+                Check(Find<ListBox>("CatalogResults").Items.Count==1,"Inline catalog binds search results");
+                Check(((CatalogCard)Find<ListBox>("CatalogResults").Items[0]).CoverPath==catalogCover,"Catalog reuses cached cover without gallery downloads");
+                Shot("catalog-page");
+                Find<ListBox>("CatalogResults").SelectedIndex=0;Call("CatalogUse_Click",window,new RoutedEventArgs());Pump();
+                Check(Find<Grid>("AddGameView").IsVisible&&!Find<Grid>("CatalogPageHost").IsVisible,"Taking metadata returns to add page");
+                Check(Find<TextBox>("GameNameTextBox").Text=="Fixture"&&Find<TextBox>("GameVersionTextBox").Text=="1.2"&&Find<TextBox>("InstallSourceTextBox").Text.EndsWith("/42/"),"Catalog fills name version and F95 source");
+                Check(Find<TextBox>("GamePathTextBox").Text=="Preserved local input","Catalog roundtrip preserves local form paths");
+                Check((string)typeof(MainWindow).GetField("GameCoverPath",flags)!.GetValue(window)! == catalogCover,"Catalog transfers selected cover into form");
+                Check(service.GetGames().Count(g=>g.F95ThreadId=="42")==1&&service.GetGames().Single(g=>g.F95ThreadId=="42").Tags.Contains("adventure"),"Taking metadata remembers one wishlist entry with tags");
+            }
             finally{CatalogProviders.Create=originalFactory;}
-            Check(window.IsVisible,"Closing search keeps launcher alive");
+            var controlled=new UiControlledCatalogProvider();CatalogProviders.Create=()=>controlled;
+            Call("SearchCatalog_Click",window,new RoutedEventArgs());Find<TextBox>("CatalogQuery").Text="old";Call("CatalogSearch_Click",window,new RoutedEventArgs());
+            Find<TextBox>("CatalogQuery").Text="new";Call("CatalogSearch_Click",window,new RoutedEventArgs());
+            controlled.New.TrySetResult(new[]{new CatalogResult("91","New result","Studio","https://f95zone.to/threads/91/")});Pump();
+            controlled.Old.TrySetResult(new[]{new CatalogResult("90","Old result","Studio","https://f95zone.to/threads/90/")});Pump();
+            Check(((CatalogCard)Find<ListBox>("CatalogResults").Items[0]).Title=="New result","Late old search response cannot replace current results");
+            Call("CloseCatalog_Click",window,new RoutedEventArgs());Pump();CatalogProviders.Create=originalFactory;
+            var choiceTask=(Task<Association?>)typeof(MainWindow).GetMethod("ChooseAssociationAsync",flags)!.Invoke(window,new object[]{new[]{new Association(service.GetGames()[0],82,"Abkürzung – bitte bestätigen",false)}})!;Pump();
+            var choiceHost=Find<Grid>("ShellGrid").Children.OfType<Border>().Last();
+            var choicePanel=(StackPanel)((ScrollViewer)choiceHost.Child).Content;
+            Check(app.Windows.Count==1&&choiceHost.IsVisible,"Association suggestions are an inline confirmation with reasons");Shot("association-overlay");
+            choicePanel.Children.OfType<Button>().First().RaiseEvent(new RoutedEventArgs(Button.ClickEvent));Pump();
+            Check(choiceTask.IsCompletedSuccessfully&&choiceTask.Result?.Game==service.GetGames()[0],"Explicit choice returns the selected identity");
+            var cancelTask=(Task<Association?>)typeof(MainWindow).GetMethod("ChooseAssociationAsync",flags)!.Invoke(window,new object[]{new[]{new Association(service.GetGames()[0],74,"Tippfehler",false)}})!;Pump();
+            choiceHost=Find<Grid>("ShellGrid").Children.OfType<Border>().Last();choicePanel=(StackPanel)((ScrollViewer)choiceHost.Child).Content;
+            choicePanel.Children.OfType<Button>().Last().RaiseEvent(new RoutedEventArgs(Button.ClickEvent));Pump();
+            Check(cancelTask.IsCompletedSuccessfully&&cancelTask.Result==null&&(bool)typeof(MainWindow).GetField("associationAborted",flags)!.GetValue(window)!,"Cancelling association does not authorize separate installation");
             Call("OpenDiagnostics_Click",window,new RoutedEventArgs()); Pump();
             var diagnostics=app.Windows.Cast<Window>().Single(w=>w!=window&&w.Title=="Diagnoseprotokolle");
             Check(diagnostics.Owner==window,"Diagnostics is an owned independent window");diagnostics.Close();Pump();
@@ -226,8 +248,8 @@ internal static class UiChecks
             if(service.GetGames().Any(g=>File.Exists(g.CoverPath)))
             {
                 Call("ShowGameDetails",service.GetGames().First(g=>File.Exists(g.CoverPath)));Call("OpenGallery_Click",window,new RoutedEventArgs());Pump();
-                var gallery=app.Windows.Cast<Window>().OfType<GameLauncher.Views.GalleryWindow>().Single();
-                Check(gallery.Owner==window&&gallery.IsVisible,"Gallery opens as an owned zoomable image window");gallery.Close();Pump();
+                var gallery=Find<Border>("GalleryOverlayHost").Child as GameLauncher.Views.GalleryOverlay;
+                Check(gallery?.IsVisible==true&&app.Windows.Count==1,"Gallery opens inline without another window");Shot("gallery-overlay");Call("CloseGallery");Pump();
                 Check(window.IsVisible&&!window.Dispatcher.HasShutdownStarted,"Closing gallery keeps launcher alive");
             }
             Call("OpenAddGameButton_Click",window,new RoutedEventArgs());
@@ -248,4 +270,14 @@ internal sealed class UiCatalogProvider : IGameCatalogProvider
 {
     public string Id=>"ui-fixture";
     public Task<IReadOnlyList<CatalogResult>> SearchAsync(string query,CancellationToken cancellation)=>Task.FromResult<IReadOnlyList<CatalogResult>>(new[]{new CatalogResult("42","Fixture","Studio","https://f95zone.to/threads/42/")});
+}
+
+
+
+internal sealed class UiControlledCatalogProvider : IGameCatalogProvider
+{
+ public string Id=>"controlled-ui";
+ public TaskCompletionSource<IReadOnlyList<CatalogResult>> Old {get;}=new();
+ public TaskCompletionSource<IReadOnlyList<CatalogResult>> New {get;}=new();
+ public Task<IReadOnlyList<CatalogResult>> SearchAsync(string query,CancellationToken cancellation)=>query=="old"?Old.Task:New.Task;
 }

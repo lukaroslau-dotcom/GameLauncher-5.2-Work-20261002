@@ -16,8 +16,9 @@ public partial class MainWindow
         if(selectedGame==null)return;
         var paths=new[]{selectedGame.CoverPath}.Concat(selectedGame.GalleryPaths).Where(File.Exists).ToList();
         if(paths.Count==0){ShowToast("Keine erreichbaren Bilder.");return;}
-        new Views.GalleryWindow(this,paths,initial).Show();
+        GalleryOverlayHost.Child=new Views.GalleryOverlay(paths,CloseGallery,initial); GalleryOverlayHost.Visibility=Visibility.Visible; ContentShell.IsEnabled=false; GalleryOverlayHost.Child.Focus();
     }
+    private void CloseGallery() { if(GalleryOverlayHost==null)return; GalleryOverlayHost.Child=null;GalleryOverlayHost.Visibility=Visibility.Collapsed;ContentShell.IsEnabled=true; }
     private void OpenDiagnosticsWindow()
     {
         var dialog=new Window { Owner=this,Title="Diagnoseprotokolle", Width=940,Height=650,WindowStartupLocation=WindowStartupLocation.CenterOwner,Background=Background,Foreground=Foreground };

@@ -255,6 +255,7 @@ public partial class MainWindow
         if (GameSaveFolderPath.Length == 0 && candidate.SavePath.Length > 0)
         { GameSaveFolderPath = candidate.SavePath; SavePathTextBox.Text = candidate.SavePath; }
     }
+    private HashSet<string> announcedAssociations=new(StringComparer.OrdinalIgnoreCase);
     private async void DiscoverNow_Click(object sender, RoutedEventArgs e) => await ScanDetectedGamesAsync();
     private async Task ScanDetectedGamesAsync(string? folder = null)
     {
@@ -284,6 +285,15 @@ public partial class MainWindow
                 foreach (var game in detectedGames.Where(g => !g.IsArchive && g.Confidence >= 90).ToList())
                     if (await AddDetectedGame(game, false)) added++;
             }
+            foreach(var foundGame in detectedGames)
+            {
+                var suggestions=SmartAssociation.Rank(gameService.GetGames(),foundGame);
+                if(suggestions.Count>0)foundGame.AssociationHint="Passt möglicherweise zu: "+string.Join(" / ",suggestions.Take(3).Select(m=>m.Game.Name))+" · Zuordnung prüfen";
+            }
+
+            var proposalPaths=detectedGames.Where(g=>g.AssociationHint.Length>0).Select(g=>g.DisplayPath).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            int fresh=proposalPaths.Count(p=>!announcedAssociations.Contains(p));announcedAssociations=proposalPaths;
+            if(fresh>0)ShowToast(fresh+" neue Funde passen möglicherweise zu deiner Bibliothek. Unter Hinzufügen prüfen.");
             hasScanned = true;
             ImportScanItemsControl.ItemsSource = detectedGames.ToList();
             DiscoveryStatusText.Text = detectedGames.Count + " neue Funde" + (added > 0 ? " · " + added + " automatisch hinzugefuegt" : "") +
@@ -323,8 +333,8 @@ public partial class MainWindow
         if (ranked.Count > 0)
         {
             if (!feedback) return false;
-            var match = ranked[0];
-            if (System.Windows.MessageBox.Show(match.Reason + "\n\nMit " + match.Game.Name + " verbinden?", "Zuordnung prüfen", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+            var match = await ChooseAssociationAsync(ranked);if(associationAborted||runtimeClosed)return false;
+            if (match != null)
             {
                 if (match.Game.IsInstalled) { ShowReinstallForm(match.Game); PrefillReinstall(scanned.ExecutablePath); return false; }
                 if (SmartAssociation.Link(gameService, match, scanned)) { RefreshGameList(); return true; }

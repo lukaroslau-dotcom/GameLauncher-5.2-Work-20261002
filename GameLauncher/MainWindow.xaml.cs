@@ -142,7 +142,7 @@ namespace GameLauncher
             scanCancellation?.Cancel();
             f95UpdateCancellation?.Cancel();
             f95UpdateTimer.Stop();
-            CancelF95MetadataLoad();
+            CancelCatalog(); CloseGallery(); CancelF95MetadataLoad();
             discovery.Dispose();
             keyboardShortcut?.Dispose();
             trayIcon?.Dispose();
@@ -165,6 +165,8 @@ namespace GameLauncher
 
         private void Window_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
+            if (GalleryOverlayHost.Visibility == Visibility.Visible) { if (e.Key == Key.Escape) CloseGallery(); else if (e.Key == Key.Left) (GalleryOverlayHost.Child as Views.GalleryOverlay)?.MoveImage(-1); else if (e.Key == Key.Right) (GalleryOverlayHost.Child as Views.GalleryOverlay)?.MoveImage(1); if (e.Key is Key.Escape or Key.Left or Key.Right || Keyboard.Modifiers==ModifierKeys.Alt || (Keyboard.Modifiers==ModifierKeys.Control&&e.Key==Key.K)) e.Handled = true; return; }
+            if(associationPrompt!=null){if(e.Key==Key.Escape){associationAborted=true;associationPrompt.TrySetResult(null);}if(e.Key==Key.Escape||Keyboard.Modifiers==ModifierKeys.Alt||(Keyboard.Modifiers==ModifierKeys.Control&&e.Key==Key.K))e.Handled=true;return;}
             if (capturingShortcut) return;
             Key pressedKey = e.Key == Key.System ? e.SystemKey : e.Key;
             bool navigationBlocked = fileOperationActive || DeleteGameDialog.Visibility == Visibility.Visible ||
@@ -310,6 +312,12 @@ namespace GameLauncher
                 ShowToast("Diese Startdatei gehoert bereits zu " + known.Name + ".");
                 return;
             }
+            var proposed=SmartAssociation.Rank(gameService.GetGames(),new ScannedExecutable {Name=GameNameTextBox.Text.Trim(),GamePath=GameFolderPath,ExecutablePath=GameExecutablePath,Confidence=100});
+            if(proposed.Count>0 && !F95UpdateService.TryExtractThreadId(InstallSourceTextBox.Text.Trim(),out _))
+            {
+                var selected=await ChooseAssociationAsync(proposed);if(associationAborted||runtimeClosed)return;
+                if(selected!=null){await AddNewGameAsVersion(selected.Game);return;}
+            }
             if (pendingF95Metadata != null &&
                 F95UpdateService.TryExtractThreadId(InstallSourceTextBox.Text.Trim(), out string newThreadId))
             {
@@ -318,6 +326,7 @@ namespace GameLauncher
                     pendingDuplicateGame = existing;
                     DuplicateGameText.Text = $"\"{existing.Name}\" (v{existing.GameVersion}) ist bereits in der Bibliothek.";
                     DuplicateAddVersionButton.IsEnabled = !string.IsNullOrWhiteSpace(GameFolderPath);
+                    DuplicateAddVersionButton.Content=existing.IsInstalled?"Als neue Version hinzufügen":"Mit Wunschliste verbinden";
                     DuplicateGameDialog.Visibility = Visibility.Visible;
                     return;
                 }
@@ -527,6 +536,17 @@ namespace GameLauncher
 
         private async Task AddNewGameAsVersion(Game? existing)
         {
+            if(existing is {IsInstalled:false})
+            {
+                var candidate=new ScannedExecutable {Name=GameNameTextBox.Text.Trim(),GamePath=GameFolderPath,ExecutablePath=GameExecutablePath,SavePath=GameSaveFolderPath,Version=GameVersionTextBox.Text.Trim(),Confidence=100};
+                try
+                {
+                    if(!SmartAssociation.Link(gameService,new Association(existing,100,"Vom Benutzer bestätigt",false),candidate)){ShowToast("Die Installation konnte nicht verbunden werden.");return;}
+                    RefreshGameList();ResetForm();ShowGameDetails(existing);ShowToast("Mit Wunschliste verbunden · Metadaten und ID erhalten.");
+                }
+                catch(Exception ex){ShowToast("Zuordnung nicht gespeichert: "+ex.Message);}
+                return;
+            }
             Game game = new Game
             {
                 Id = Guid.NewGuid().ToString(),
@@ -1807,7 +1827,9 @@ namespace GameLauncher
 
         private void ShowView(UIElement view)
         {
-            if (view != AddGameView && AddGameView.Visibility == Visibility.Visible) ResetForm();
+            if (view != AddGameView && view != CatalogPageHost && AddGameView.Visibility == Visibility.Visible) ResetForm();
+            if (view != CatalogPageHost) CancelCatalog();
+            CatalogPageHost.Visibility = Visibility.Collapsed;
             DownloadsPageHost.Visibility = Visibility.Collapsed;
             BackupsPageHost.Visibility = Visibility.Collapsed;
             HomeView.Visibility = Visibility.Collapsed;

@@ -1,0 +1,70 @@
+PASS UI: Initial window fits work area
+PASS UI: Monitor bounds / DPI 1 1366
+PASS UI: Monitor bounds / DPI 1 1920
+PASS UI: Monitor bounds / DPI 1 1280
+PASS UI: Monitor bounds / DPI 1,25 1366
+PASS UI: Monitor bounds / DPI 1,25 1920
+PASS UI: Monitor bounds / DPI 1,25 1280
+PASS UI: Monitor bounds / DPI 1,5 1366
+PASS UI: Monitor bounds / DPI 1,5 1920
+PASS UI: Monitor bounds / DPI 1,5 1280
+PASS UI: Monitor bounds / DPI 2 1366
+PASS UI: Monitor bounds / DPI 2 1920
+PASS UI: Monitor bounds / DPI 2 1280
+PASS UI: Text viewport has room for a complete line at 1000: 24
+PASS UI: Save action remains within window at 1000
+PASS UI: Managed GameLibrary controls load their saved defaults
+PASS UI: Remote host exposes HD/60 FPS, privacy curtain and streaming focus controls
+PASS UI: Settings layout remains anchored to the window at 1000 (Y=0)
+PASS UI: Text viewport has room for a complete line at 1366: 24
+PASS UI: Save action remains within window at 1366
+PASS UI: Managed GameLibrary controls load their saved defaults
+PASS UI: Remote host exposes HD/60 FPS, privacy curtain and streaming focus controls
+PASS UI: Settings layout remains anchored to the window at 1366 (Y=0)
+PASS UI: Bottom navigation survives large UI scale
+PASS UI: Floating navigation stays at the bottom without covering search
+PASS UI: Large library realizes only visible card rows
+PASS UI: Game cards use landscape 16:9 artwork
+PASS UI: Library contains a game card for size checks
+PASS UI: Wheel scroll interpolates bounded pixel movement without losing virtualization
+PASS UI: Game card size: 3.0 KB
+PASS UI: Installed size is visible on the card
+PASS UI: Game card size: Größe unbekannt
+PASS UI: Uninstalled cards hide installation size
+PASS UI: Game card size: Größe unbekannt
+PASS UI: Playtime sort orders by real playtime
+PASS UI: Recently checked list remains in the shared update flow
+PASS UI: Available updates view and navigation badge reflect detected updates
+PASS UI: Update failures stay visible instead of being treated as no update
+PASS UI: Current online release can be ignored from game details
+PASS UI: Online release can be marked as the installed version
+PASS UI: Global search updates library
+PASS UI: Archived game asks whether to install from source or link an installation
+PASS UI: Deleted game appears in its separate library
+PASS UI: Game details explain missing installation paths and offer relinking
+PASS UI: Game detail offers a direct source website action
+PASS UI: Game detail keeps a clearly labeled full-delete action visible
+PASS UI: Dragging detail artwork persists its crop position
+PASS UI: Backups navigation opens connected view
+PASS UI: Downloads navigation opens connected view
+PASS UI: Wide libraries keep at most five medium landscape cards
+PASS UI: Catalog is a page without a second window
+PASS UI: Inline catalog binds search results
+PASS UI: Catalog reuses cached cover without gallery downloads
+PASS UI: Taking metadata returns to add page
+PASS UI: Catalog fills name version and F95 source
+PASS UI: Catalog roundtrip preserves local form paths
+PASS UI: Catalog transfers selected cover into form
+PASS UI: Taking metadata remembers one wishlist entry with tags
+PASS UI: Late old search response cannot replace current results
+PASS UI: Association suggestions are an inline confirmation with reasons
+PASS UI: Explicit choice returns the selected identity
+PASS UI: Cancelling association does not authorize separate installation
+PASS UI: Diagnostics is an owned independent window
+PASS UI: Closing diagnostics keeps launcher alive
+PASS UI: Gallery opens inline without another window
+PASS UI: Closing gallery keeps launcher alive
+PASS UI: Wishlist accepts a title without paths, source or version
+PASS UI: Direct wishlist navigation filters the library
+PASS UI: Update lists share one natural document scroll flow
+UI screenshots: C:\Users\shamr\AppData\Local\Temp\GameLauncher.52.InlineFinalUI-50f249c9119e440683eb0fed8db128c6

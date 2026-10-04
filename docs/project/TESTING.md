@@ -43,3 +43,15 @@ Die vorstehenden Ergebnisse dokumentieren den früheren Kandidaten b5ed80f. Für
 Neue Messung: Lauf 1 settledIdle 0,519 % eines Kerns, Working Set 182149120 Bytes, Private 139153408 Bytes; Gaming 8,295 %, 210112512 / 156499968 Bytes. Lauf 2 settledIdle 0 %, 173268992 / 134180864 Bytes; Gaming 7,256 %, 201244672 / 152248320 Bytes. Drei Sekunden Messfenster, vier logische CPUs. Spielzeit 15,401 / 16,170 Sekunden. Kein Langzeitbenchmark; Galerieprüfung verändert den Speicherverlauf. Frühere schwankende Werte werden nicht unterschlagen.
 
 Paketimport ist inzwischen mit isoliertem Manifest-/Hash-/Settings-Test abgedeckt; die frühere Aussage „Paketimport nicht ausgeführt“ gilt für b5ed80f. Alle anderen oben genannten nicht ausgeführten Gates bleiben offen. Ein Dialog-Ressourcenpfad scheiterte zwischenzeitlich im UI-Test; absolute Component-URI korrigiert, finale UI- und EXE-Gates danach bestanden.
+
+## Revision 04.10.2026 – Inline-Oberfläche und Zuordnung
+
+Maßgebliche Belege: docs/verification/inline-core-process.txt, inline-ui.txt, inline-publish.txt, inline-published-smoke.json und inline-original-source-check.json.
+
+- `dotnet run --project GameLauncher.Tests -c Release -- --process-test <TestGame.exe>`: 142 Kernchecks und sieben Prozesschecks, Exit 0.
+- `dotnet run --project GameLauncher.Tests -c Release -- --ui-test --data-root <frischer Tempordner> --fixture-covers <evidence/ui-covers>`: 69 Prüfungen, Exit 0. Covervorschau und Übernahme, Formulareingaben, Wunschliste, verspätete Suchantworten, Inline-Galerie, Auswahl-/Abbruchablauf. Testprovider ist lokal, kein Live-Account.
+- `dotnet publish GameLauncher/GameLauncher.csproj -c Release -r win-x64 --self-contained true -o artifacts/GameLauncher-5.2-inline-candidate`: Exit 0.
+- `./scripts/Test-Published.ps1 -Package ./artifacts/GameLauncher-5.2-inline-candidate`: zweimal veröffentlichte EXE, jeweils 14 Prüfungen; Galerie öffnet inline und schließt ohne Appende. Beide Exit 0.
+- Originalquellen: 58 Hashes, null Abweichungen.
+
+Die Kernprüfungen ergänzen Abkürzungen, Tippfehler, Fortsetzungsschutz, mehrdeutige Treffer, Zuordnung zu reinen Namenswünschen, bestätigtes/persistentes Aliaslernen und direkte Cover-/Versionsfelder. Nach Korrektur des Drei-Buchstaben-Aliasfalls wurden die betroffenen Kernchecks und anschließend UI/Publish/EXE erneut ausgeführt. Keine funktionale Änderung nach den abschließenden Gates. Die bisherigen externen und manuellen Abnahmegrenzen bleiben bestehen. Such-/Galerie-/Zuordnungsscreenshots wurden visuell geprüft; eine vollständige manuelle Bedienungsabnahme ist damit nicht behauptet.

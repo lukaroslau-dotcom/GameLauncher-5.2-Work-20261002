@@ -5,78 +5,129 @@ using System.Windows.Input;
 using GameLauncher.Constants;
 using GameLauncher.models;
 using GameLauncher.Service;
-using Button=System.Windows.Controls.Button;
-using TextBox=System.Windows.Controls.TextBox;
-using ListBox=System.Windows.Controls.ListBox;
 namespace GameLauncher;
 public partial class MainWindow
 {
+    private IGameCatalogProvider? catalogProvider;
+    private CancellationTokenSource? catalogCancellation;
+    private UIElement? catalogReturnPage;
+    private int catalogGeneration;
+    private bool catalogTaking;
+    // Injectable boundary used by isolated UI checks; production uses the existing metadata service.
+    internal Func<string,CancellationToken,Task<F95Metadata>>? CatalogMetadataLoader = null;
     private void WishlistNavigation_Click(object sender,RoutedEventArgs e)
-    { libraryFilter=GameListFilter.Wishlist; LibrarySearchTextBox.Clear(); SearchGamesTextBox.Clear(); RefreshGameList(); ShowView(LibraryView); HighlightNav(NavLibraryButton); }
+    {libraryFilter=GameListFilter.Wishlist;LibrarySearchTextBox.Clear();SearchGamesTextBox.Clear();RefreshGameList();ShowView(LibraryView);HighlightNav(NavLibraryButton);}
     private void SearchCatalog_Click(object sender,RoutedEventArgs e)
     {
-        var dialog=new Window {Owner=this,Title="Spiele nach Namen suchen",Width=850,Height=660,WindowStartupLocation=WindowStartupLocation.CenterOwner,Background=Background,Foreground=Foreground};
-        dialog.Resources=new ResourceDictionary {Source=new Uri("/GameLauncher;component/Theme.xaml",UriKind.Relative)};
-        var root=new DockPanel {Margin=new Thickness(22)};var top=new StackPanel();DockPanel.SetDock(top,Dock.Top);
-        var query=new TextBox {Text=GameFormTitleTextBlock.IsVisible?GameNameTextBox.Text:SearchGamesTextBox.Text,MaxLength=160};
-        var search=new Button {Content="F95-Katalog durchsuchen",Margin=new Thickness(0,10,0,12)};
-        var status=new TextBlock {Text="Namen eingeben. Treffer können gemerkt und später mit lokalen Dateien verbunden werden.",TextWrapping=TextWrapping.Wrap,Margin=new Thickness(0,0,0,12)};
-        top.Children.Add(query);top.Children.Add(search);top.Children.Add(status);root.Children.Add(top);
-        var bottom=new StackPanel();DockPanel.SetDock(bottom,Dock.Bottom);
-        var detail=new TextBlock {TextWrapping=TextWrapping.Wrap,Margin=new Thickness(0,12,0,12)};
-        var remember=new Button {Content="Merken & automatisch zuordnen",IsEnabled=false};
-        bottom.Children.Add(detail);bottom.Children.Add(remember);root.Children.Add(bottom);
-        var rows=new ListBox {DisplayMemberPath="Title"};root.Children.Add(rows);dialog.Content=root;
-        var provider=CatalogProviders.Create();using var providerLifetime=provider as IDisposable;using var cancellation=new CancellationTokenSource();
-        bool open=true;dialog.Closed+=(_,_)=>{open=false;cancellation.Cancel();};
-        var service=new CatalogSearchService(gameService.Paths.ArchivePath,provider);
-        if(provider is ICatalogAccountProvider account)
+        if(CatalogPageHost.IsVisible)return;
+        catalogReturnPage=PageHost.Children.Cast<UIElement>().FirstOrDefault(p=>p.Visibility==Visibility.Visible)??HomeView;
+        CatalogQuery.Text=AddGameView.IsVisible?GameNameTextBox.Text:SearchGamesTextBox.Text;
+        CancelF95MetadataLoad();ShowView(CatalogPageHost);
+        catalogProvider=CatalogProviders.Create();CatalogResults.ItemsSource=null;CatalogUseButton.IsEnabled=false;
+        CatalogStatus.Text="Namen eingeben. Nur Cover werden als Vorschau geladen; keine Galerie.";
+        CatalogAccountButton.Visibility=catalogProvider is ICatalogAccountProvider?Visibility.Visible:Visibility.Collapsed;
+        CatalogQuery.Focus();
+    }
+    private void CancelCatalog()
+    {
+        catalogGeneration++;catalogCancellation?.Cancel();catalogCancellation?.Dispose();catalogCancellation=null;
+        (catalogProvider as IDisposable)?.Dispose();catalogProvider=null;catalogTaking=false;
+        if(CatalogSearchButton!=null)CatalogSearchButton.IsEnabled=true;
+    }
+    private void CloseCatalog_Click(object sender,RoutedEventArgs e)=>ShowView(catalogReturnPage??HomeView);
+    private async void CatalogAccount_Click(object sender,RoutedEventArgs e)
+    {
+        if(catalogProvider is not ICatalogAccountProvider account)return;
+        catalogCancellation??=new();CatalogAccountButton.IsEnabled=false;
+        try{if(account.IsSignedIn)await account.SignOutAsync(catalogCancellation.Token);else await account.SignInAsync(catalogCancellation.Token);CatalogAccountButton.Content=account.IsSignedIn?"Abmelden":"Anmelden";}
+        catch(OperationCanceledException){}catch(Exception ex){CatalogStatus.Text=ex.Message;}finally{CatalogAccountButton.IsEnabled=true;}
+    }
+    private async void CatalogSearch_Click(object sender,RoutedEventArgs e)=>await SearchCatalogAsync();
+    private async void CatalogQuery_KeyDown(object sender,System.Windows.Input.KeyEventArgs e){if(e.Key==Key.Enter){e.Handled=true;await SearchCatalogAsync();}}
+    private void CatalogSelectionChanged(object sender,SelectionChangedEventArgs e)=>CatalogUseButton.IsEnabled=!catalogTaking&&CatalogResults.SelectedItem is CatalogCard;
+    private async Task SearchCatalogAsync()
+    {
+        if(catalogProvider==null||catalogTaking)return;
+        catalogCancellation?.Cancel();catalogCancellation?.Dispose();catalogCancellation=new();
+        var token=catalogCancellation.Token;int generation=++catalogGeneration;
+        CatalogResults.ItemsSource=null;CatalogStatus.Text="Suche läuft …";
+        try
         {
-            var accountButton=new Button {Content=account.IsSignedIn?"Abmelden":"Anmelden",Margin=new Thickness(0,0,0,10)};top.Children.Add(accountButton);
-            accountButton.Click+=async (_,_)=>
-            {
-                accountButton.IsEnabled=false;
-                try{if(account.IsSignedIn)await account.SignOutAsync(cancellation.Token);else await account.SignInAsync(cancellation.Token);if(open)accountButton.Content=account.IsSignedIn?"Abmelden":"Anmelden";}
-                catch(OperationCanceledException){}catch(Exception ex){if(open)status.Text=ex.Message;}
-                finally{if(open)accountButton.IsEnabled=true;}
-            };
+            var response=await new CatalogSearchService(gameService.Paths.ArchivePath,catalogProvider).SearchAsync(CatalogQuery.Text,token);
+            if(generation!=catalogGeneration)return;
+            var cards=response.Results.Select(r=>new CatalogCard(r)).ToList();CatalogResults.ItemsSource=cards;
+            CatalogStatus.Text=cards.Count==0?"Keine Treffer. Versuche den vollständigen Titel oder weniger Suchwörter.":response.Notice;
+            using var limit=new SemaphoreSlim(3);
+            foreach(var card in cards)card.Loading=LoadCatalogCover(card,limit,token);
+            await Task.WhenAll(cards.Select(c=>c.Loading!));
         }
-        async Task Search()
+        catch(OperationCanceledException){}catch(Exception ex){if(generation==catalogGeneration)CatalogStatus.Text=ex.Message;}
+    }
+    private async Task LoadCatalogCover(CatalogCard card,SemaphoreSlim limit,CancellationToken token)
+    {
+        try
         {
-            if(!search.IsEnabled)return;search.IsEnabled=false;remember.IsEnabled=false;
-            try {status.Text="Suche läuft …";var response=await service.SearchAsync(query.Text,cancellation.Token);if(!open)return;rows.ItemsSource=response.Results;status.Text=response.Notice;}
-            catch(OperationCanceledException){}catch(Exception ex){if(open)status.Text=ex.Message;}
-            finally{if(open)search.IsEnabled=true;}
-        }
-        search.Click+=async (_,_)=>await Search();query.KeyDown+=async (_,e)=>{if(e.Key==Key.Enter){e.Handled=true;await Search();}};
-        rows.SelectionChanged+=(_,_)=>{remember.IsEnabled=rows.SelectedItem is CatalogResult;detail.Text=rows.SelectedItem is CatalogResult r?"Ersteller: "+r.Creator+"\n"+r.Source:"";};
-        remember.Click+=async (_,_)=>
-        {
-            if(rows.SelectedItem is not CatalogResult result||fileOperationActive||f95UpdateRunning)return;
-            remember.IsEnabled=false;search.IsEnabled=false;status.Text="Metadaten werden ergänzt …";
+            await limit.WaitAsync(token);
             try
             {
-                F95Metadata? metadata=null;string? cover=null;var galleryPaths=new List<string>();string notice="";
-                try
-                {
-                    metadata=await f95UpdateService.FetchMetadataAsync(result.Source,cancellation.Token);
-                    if(metadata.ImageUrl.Length>0)cover=await f95UpdateService.DownloadImageAsync(metadata.ImageUrl,Path.Combine(gameService.Paths.GamesDataPath,"Covers"),"catalog-"+result.Id,cancellation.Token);
-                    if(settingsService.Settings.AutoDownloadF95Gallery && metadata.PreviewUrls.Count>0) { status.Text="Galeriebilder werden ergänzt …"; galleryPaths=await f95UpdateService.DownloadGalleryAsync(metadata.PreviewUrls,Path.Combine(gameService.Paths.GamesDataPath,"F95Galleries",result.Id),result.Id,cancellation.Token); }
-                }
-                catch(Exception ex) when(ex is not OperationCanceledException){notice=" Metadaten später ergänzen: "+ex.Message;}
-                cancellation.Token.ThrowIfCancellationRequested();
-                bool existed=gameService.GetGames().Any(g=>g.F95ThreadId==result.Id||g.InstallSource==result.Source);
-                var game=CatalogSearchService.Remember(gameService,result,query.Text.Trim());
-                if(metadata!=null){MetadataEnrichment.Apply(game,metadata);game.LatestKnownVersion=metadata.Version;game.F95Status=metadata.Status;}
-                if(cover!=null&&!game.UserEditedFields.Contains(nameof(Game.CoverPath)))game.CoverPath=cover;
-                if(galleryPaths.Count>0)game.GalleryPaths=game.GalleryPaths.Concat(galleryPaths).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
-                if(!TrySaveGames()){if(!existed)gameService.RemoveGame(game);throw new IOException("Der Treffer konnte nicht gespeichert werden.");}
-                RefreshGameList();status.Text="Gemerkt. Eindeutige neue Installationen werden zugeordnet; Dateien werden dabei nicht verschoben."+notice;
+
+                string folder=Path.Combine(gameService.Paths.GamesDataPath,"Covers");
+                string? cached=Directory.Exists(folder)?Directory.EnumerateFiles(folder,"catalog-"+card.Result.Id+".*").FirstOrDefault(p=>new FileInfo(p).Length>0):null;
+                if(cached!=null)card.CoverPath=cached;
+                else if(card.Result.CoverUrl.Length>0)card.CoverPath=await f95UpdateService.DownloadImageAsync(card.Result.CoverUrl,folder,"catalog-"+card.Result.Id,token)??"";
+                token.ThrowIfCancellationRequested();
+                bool known=gameService.FindGameByF95ThreadId(card.Result.Id)!=null;
+                card.Status=(known?"Bereits in deiner Bibliothek · ":"")+card.Result.Version+(card.CoverPath.Length==0?" · Kein Cover verfügbar":"");
             }
-            catch(OperationCanceledException){}catch(Exception ex){if(open)status.Text=ex.Message;}
-            finally{if(open){remember.IsEnabled=true;search.IsEnabled=true;}}
-        };
-        dialog.ShowDialog();
+            finally{limit.Release();}
+        }
+        catch(OperationCanceledException){}catch(Exception){card.Status="Vorschau nicht verfügbar · Übernahme erneut versuchen";}
+    }
+    private async void CatalogUse_Click(object sender,RoutedEventArgs e)
+    {
+        if(CatalogResults.SelectedItem is not CatalogCard card||catalogTaking||fileOperationActive)return;
+        catalogTaking=true;CatalogUseButton.IsEnabled=false;CatalogSearchButton.IsEnabled=false;
+        int generation=catalogGeneration;var token=catalogCancellation?.Token??CancellationToken.None;
+        try
+        {
+            CatalogStatus.Text="Metadaten werden übernommen …";
+            if(card.Loading!=null)await card.Loading;
+            if(card.Metadata==null)card.Metadata=await (CatalogMetadataLoader?.Invoke(card.Result.Source,token)??f95UpdateService.FetchMetadataAsync(card.Result.Source,token));
+            if(card.CoverPath.Length==0&&card.Metadata.ImageUrl.Length>0)card.CoverPath=await f95UpdateService.DownloadImageAsync(card.Metadata.ImageUrl,Path.Combine(gameService.Paths.GamesDataPath,"Covers"),"catalog-"+card.Result.Id,token)??"";
+            token.ThrowIfCancellationRequested();if(generation!=catalogGeneration)return;
+            ApplyCatalogToForm(card);
+        }
+        catch(OperationCanceledException){}catch(Exception ex){if(generation==catalogGeneration)CatalogStatus.Text="Übernahme nicht abgeschlossen: "+ex.Message;}
+        finally{if(generation==catalogGeneration){catalogTaking=false;CatalogUseButton.IsEnabled=true;CatalogSearchButton.IsEnabled=true;}}
+    }
+    private void ApplyCatalogToForm(CatalogCard card)
+    {
+        var metadata=card.Metadata??throw new IOException("Metadaten fehlen.");
+        var existing=gameService.FindGameByF95ThreadId(card.Result.Id);
+        if(existing==null){var wishes=gameService.GetGames().Where(g=>!g.IsInstalled&&g.Status==GameStatus.Wishlist&&string.IsNullOrWhiteSpace(g.F95ThreadId)&&SmartAssociation.Key(g.Name)==SmartAssociation.Key(card.Title)).ToList();if(wishes.Count==1)existing=wishes[0];}
+        var snapshot=existing==null?null:System.Text.Json.JsonSerializer.Serialize(existing);
+        var game=CatalogSearchService.Remember(gameService,card.Result,CatalogQuery.Text.Trim());
+        try
+        {
+            MetadataEnrichment.Apply(game,metadata);game.LatestKnownVersion=metadata.Version;game.F95Status=metadata.Status;
+            if(game.CoverPath.Length==0&&card.CoverPath.Length>0)game.CoverPath=card.CoverPath;
+            gameService.SaveGames();
+        }
+        catch
+        {
+            if(existing==null)gameService.RemoveGame(game);
+            else {gameService.RemoveGame(game);gameService.AddGame(System.Text.Json.JsonSerializer.Deserialize<Game>(snapshot!)!);}
+            throw;
+        }
+        // Preserve the form's local paths and notes when returning from its search page.
+        if(catalogReturnPage!=AddGameView)ResetForm();
+        CancelF95MetadataLoad();
+        pendingF95Metadata=metadata;pendingGalleryPaths=new();lastMetadataSource=card.Result.Source;
+        GameNameTextBox.Text=string.IsNullOrWhiteSpace(metadata.Name)?card.Title:metadata.Name;
+        GameVersionTextBox.Text=metadata.Version;InstallSourceTextBox.Text=card.Result.Source;
+        GameCoverPath=card.CoverPath;GameCoverImage.ImagePath=card.CoverPath;GameCoverImage.FocusX=GameCoverImage.FocusY=.5;
+        F95MetadataStatusText.Text="Auf der Wunschliste gemerkt · Metadaten übernommen · "+metadata.Developer+" · "+string.Join(", ",metadata.Tags);
+        ShowView(AddGameView);HighlightNav(NavAddGameButton);RefreshGameList();
     }
     private readonly Dictionary<string,(long Bytes,DateTime Write,DateTime Seen)> stableCandidates=new(StringComparer.OrdinalIgnoreCase);
     private int AutoAssociateDetected(IEnumerable<ScannedExecutable> found)

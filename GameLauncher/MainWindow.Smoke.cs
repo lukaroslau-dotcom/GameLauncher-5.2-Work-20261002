@@ -51,8 +51,8 @@ public partial class MainWindow
                 Check(IsVisible&&!Dispatcher.HasShutdownStarted,"Closing diagnostics keeps published launcher alive");
                 var mediaFixture=new Game {Id="media-smoke",Name="Galerieprüfung",CoverPath=Path.Combine(root,"home.png"),GalleryPaths=new(){Path.Combine(root,"library.png")}};
                 ShowGameDetails(mediaFixture);OpenGallery(mediaFixture.CoverPath);await Task.Delay(350);
-                var gallery=System.Windows.Application.Current.Windows.OfType<Views.GalleryWindow>().Single();
-                Check(gallery.IsVisible&&gallery.Owner==this,"Published image gallery opens");gallery.Close();
+                var gallery=GalleryOverlayHost.Child as Views.GalleryOverlay;
+                Check(gallery?.IsVisible==true&&System.Windows.Application.Current.Windows.Count==1,"Published gallery opens inline without another window");CloseGallery();
                 Check(IsVisible&&!Dispatcher.HasShutdownStarted,"Closing gallery keeps published launcher alive");
                 HomeNavigationButton_Click(this,new RoutedEventArgs());
                 metrics["startupIdle"] = await SampleProcess();
