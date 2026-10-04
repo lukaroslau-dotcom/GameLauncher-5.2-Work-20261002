@@ -1,3 +1,9 @@
+# Entwicklungsstand 04.10.2026 – Galerie mit direkter Mausbedienung
+
+Aktuelles Delta auf b5f7c13: Mausradzoom ohne Strg an der Zeigerposition (1–6×), linke Maustaste zum Verschieben, begrenzte Bildränder, seitliche Pfeile, Reset bei Bildwechsel, kein Zoomslider/keine Bildscrollleisten. Galerie bleibt im Hauptfenster. Details HANDOFF-GALLERY-2026-10-04.md.
+
+Aktuell bestanden: 77 programmgesteuerte WPF-UI-Checks, self-contained Publish und zwei Starts der veröffentlichten EXE mit je 14 Checks; Belege docs/verification/gesture-*. Bilddekodierung, Mausrad, Verschiebung, Mausfangende, Zoomgrenzen und beide Pfeile geprüft. Gerenderte Galerie visuell geprüft. Keine manuelle Hardware-Mausabnahme behauptet. Nach Tests keine Produktänderung; lediglich Whitespace/Dokumentation. Frühere Kern-/Prozessgates unten sind Nachweise des vorherigen funktionalen Stands, wurden für diese reine Galerieänderung nicht erneut ausgeführt.
+
 # Entwicklungsstand 04.10.2026 – geprüfter Inline-Kandidat
 
 Revision auf 695b11f, Commitbetreff `feat: integrate catalog and gallery with learned wishlist matching`. Separate WPF/.NET10-Kopie; Original und V7 unverändert.

@@ -45,3 +45,12 @@
 - Behobener Zwischenfehler: WPF/WinForms-Typmehrdeutigkeit im neuen Overlay; anschließend Build/UI/Regression bestanden.
 - Blocker/Grenzen: keine vollständige manuelle/native/LAN/Crash-/große Downloadabnahme, keine neue Anmeldung; ältere Grenzen unverändert. Keine pauschale Releasefreigabe.
 - Baseline: WPF/.NET10/JSON unverändert; additive CatalogResult-Cover/Versionsfelder; bestätigte neue Laufzeitabläufe laut Belegen.
+
+## 2026-10-04 — Direkte Galeriebedienung
+- Modell/Reasoning: aktuelle Codex-Sitzung, keine Delegation, genaue Laufzeitkennung nicht unabhängig ermittelt.
+- Commit: dieser Eintrag gehört zu `feat: add pointer zoom and drag pan to inline gallery`, Elternstand b5f7c13.
+- Dateien: Views/GalleryOverlay.cs, GameLauncher.Tests/UiChecks.cs, README, CURRENT_STATE, TESTING, HANDOFF-GALLERY und gesture-Verifikationsbelege.
+- Ergebnis: Zoom per Mausrad ohne Strg, zeigerbezogener Zoomanker, Drag/Pan mit linker Maustaste und Begrenzung, seitliche Bildpfeile, Reset beim Bildwechsel. Keine Änderung außerhalb der Galeriebedienung am Produkt.
+- Tests: `dotnet run --project GameLauncher.Tests -c Release -- --ui-test --data-root <Temp> --fixture-covers <evidence/ui-covers>` 77 Checks, Exit 0; `dotnet publish GameLauncher/GameLauncher.csproj -c Release -r win-x64 --self-contained true -o artifacts/GameLauncher-5.2-gesture-candidate` Exit 0; `./scripts/Test-Published.ps1 -Package ./artifacts/GameLauncher-5.2-gesture-candidate` zwei echte EXE-Starts mit je 14 Checks, Exit 0. Gerendertes Bild zusätzlich visuell geprüft. Erstes Build mit mehrdeutigen WPF/WinForms-Namen korrigiert. Keine unbelegten manuellen Mausaktionen behauptet.
+- Blocker/Grenzen: keine native manuelle Hardware-Maus-/Mehrmonitorabnahme; bestehende externe Grenzen unverändert. Kern-/Prozesschecks des Vorgängers nicht erneut als aktueller Lauf ausgegeben.
+- Baseline: keine Architektur-/Datenformatänderung.

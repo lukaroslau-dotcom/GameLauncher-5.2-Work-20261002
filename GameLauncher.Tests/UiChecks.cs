@@ -247,9 +247,31 @@ internal static class UiChecks
             Check(window.IsVisible&&!window.Dispatcher.HasShutdownStarted,"Closing diagnostics keeps launcher alive");
             if(service.GetGames().Any(g=>File.Exists(g.CoverPath)))
             {
-                Call("ShowGameDetails",service.GetGames().First(g=>File.Exists(g.CoverPath)));Call("OpenGallery_Click",window,new RoutedEventArgs());Pump();
+                var galleryGame=service.GetGames().First(g=>File.Exists(g.CoverPath));galleryGame.GalleryPaths.Add(Path.Combine(paths.ArchivePath,"library.png"));
+                Call("ShowGameDetails",galleryGame);Call("OpenGallery_Click",window,new RoutedEventArgs());Pump();
                 var gallery=Find<Border>("GalleryOverlayHost").Child as GameLauncher.Views.GalleryOverlay;
-                Check(gallery?.IsVisible==true&&app.Windows.Count==1,"Gallery opens inline without another window");Shot("gallery-overlay");Call("CloseGallery");Pump();
+                Check(gallery?.IsVisible==true&&app.Windows.Count==1,"Gallery opens inline without another window");
+                var galleryType=gallery!.GetType();
+                T GalleryField<T>(string name)=>(T)galleryType.GetField(name,flags)!.GetValue(gallery)!;
+                void GalleryCall(string name,params object[] values)=>galleryType.GetMethod(name,flags)!.Invoke(gallery,values);
+                var stage=GalleryField<Grid>("stage");var picture=GalleryField<System.Windows.Controls.Image>("picture");
+                var imageWait=System.Diagnostics.Stopwatch.StartNew();while(picture.Source==null&&imageWait.ElapsedMilliseconds<4000){Pump();Thread.Sleep(10);}
+                Check(picture.Source!=null&&picture.ActualWidth>0&&picture.ActualHeight>0,"Gallery image finishes decoding and is laid out before interaction");Shot("gallery-overlay");
+                var wheelZoom=new System.Windows.Input.MouseWheelEventArgs(System.Windows.Input.Mouse.PrimaryDevice,Environment.TickCount,120){RoutedEvent=UIElement.PreviewMouseWheelEvent,Source=picture};picture.RaiseEvent(wheelZoom);Pump();
+                Check(wheelZoom.Handled&&GalleryField<double>("zoom")>1,"Gallery wheel zooms without Ctrl and does not scroll the page");
+                GalleryCall("ZoomAt",new Point(stage.ActualWidth/2,stage.ActualHeight/2),2d);Pump();
+                var offset=GalleryField<TranslateTransform>("offset");double beforePan=offset.X;
+                GalleryCall("BeginPan",new Point(100,100));GalleryCall("PanTo",new Point(150,120));
+                Check(offset.X!=beforePan&&GalleryField<bool>("dragging"),"Dragging moves enlarged image within viewport bounds");
+                GalleryCall("EndPan");Check(!GalleryField<bool>("dragging")&&!stage.IsMouseCaptured,"Ending drag releases pointer capture");
+                GalleryCall("ZoomAt",new Point(100,100),100d);Check(GalleryField<double>("zoom")==6,"Gallery zoom has a bounded maximum");
+                Shot("gallery-zoom-pan");
+                GalleryField<Button>("next").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));Pump();
+                Check(GalleryField<int>("index")==1&&GalleryField<double>("zoom")==1&&offset.X==0,"Right edge arrow changes image and resets zoom and pan");
+                GalleryField<Button>("previous").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));Pump();
+                Check(GalleryField<int>("index")==0,"Left edge arrow returns to previous image");
+                GalleryCall("ZoomAt",new Point(100,100),.001d);Check(GalleryField<double>("zoom")==1,"Zoom out stops at fitted image");
+                Call("CloseGallery");Pump();
                 Check(window.IsVisible&&!window.Dispatcher.HasShutdownStarted,"Closing gallery keeps launcher alive");
             }
             Call("OpenAddGameButton_Click",window,new RoutedEventArgs());

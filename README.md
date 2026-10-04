@@ -2,7 +2,7 @@
 
 WPF/.NET 10, Originalquellen und ursprüngliches Archiv bleiben getrennt. Next dient als Referenz. Standarddaten: `%LOCALAPPDATA%\GameLauncher.5.2\Archive`.
 
-Start: `artifacts\GameLauncher-5.2-inline-candidate\GameLauncher.exe`. Das vollständige Verzeichnis zusammen behalten. Self-contained Windows x64; kein separat installiertes .NET erforderlich. Dies ist ein getesteter Integrationskandidat, keine vollständige Abnahme aller ursprünglichen und geplanten Funktionen.
+Start: `artifacts\GameLauncher-5.2-gesture-candidate\GameLauncher.exe`. Das vollständige Verzeichnis zusammen behalten. Self-contained Windows x64; kein separat installiertes .NET erforderlich. Dies ist ein getesteter Integrationskandidat, keine vollständige Abnahme aller ursprünglichen und geplanten Funktionen.
 
 Neu: Wunschliste nur mit Namen, F95-Namenssuche und gemerkte Treffer, Entwickler/Tags/Beschreibung/Engine, vorsichtige automatische Zuordnung lokaler Spiele, große Galerie mit Zoom, animiertes Scrollen, durchgängige Update-Listen und unabhängig schließbare Diagnose. Bibliothek mit höchstens fünf großen 16:9-Covern je Reihe.
 
@@ -11,3 +11,5 @@ Einstellungen bieten JSON-Transfer sowie Bibliothekspakete mit SHA-256-Manifest.
 Bedienung und Erweiterungsanleitung: `docs/project/HANDOFF-2026-10-04.md`. Tatsächliche Tests und offene Grenzen: `TESTING.md`, `FEATURE_MATRIX.md`, `CURRENT_STATE.md`. Keine erfundenen Accounts, Freunde oder Erfolge.
 
 Revision vom 04.10.: Suche als Seite mit Coverzeilen, Merken und direkte Formularübernahme; Galerie als Overlay. Abkürzungen/Tippfehler werden begründet vorgeschlagen, bestätigte Namen als Aliase gelernt und Wünsche bei Installation unter gleicher ID verbunden. Kein separates Fenster für diese neuen Abläufe.
+
+Galerie: Mausrad zoomt ohne Strg, linke Maustaste zieht das vergrößerte Bild, Pfeile am Bildrand wechseln Bilder. Details: docs/project/HANDOFF-GALLERY-2026-10-04.md.

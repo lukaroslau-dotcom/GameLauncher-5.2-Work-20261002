@@ -55,3 +55,8 @@ Maßgebliche Belege: docs/verification/inline-core-process.txt, inline-ui.txt, i
 - Originalquellen: 58 Hashes, null Abweichungen.
 
 Die Kernprüfungen ergänzen Abkürzungen, Tippfehler, Fortsetzungsschutz, mehrdeutige Treffer, Zuordnung zu reinen Namenswünschen, bestätigtes/persistentes Aliaslernen und direkte Cover-/Versionsfelder. Nach Korrektur des Drei-Buchstaben-Aliasfalls wurden die betroffenen Kernchecks und anschließend UI/Publish/EXE erneut ausgeführt. Keine funktionale Änderung nach den abschließenden Gates. Die bisherigen externen und manuellen Abnahmegrenzen bleiben bestehen. Such-/Galerie-/Zuordnungsscreenshots wurden visuell geprüft; eine vollständige manuelle Bedienungsabnahme ist damit nicht behauptet.
+
+## Galerie-Mausbedienung 04.10.2026
+77 WPF-UI-Checks bestanden, einschließlich Bilddekodierung/Layout, Mausrad ohne Strg, begrenztes Verschieben, Mausfangende, Zoomgrenzen sowie seitlicher Navigation mit Reset. Die Pan-Geometrie wird programmgesteuert ausgeübt; eine reale manuelle Mausabnahme wird nicht behauptet. Der Wheel-Test verwendet ein geroutetes WPF-Mausradereignis.
+
+Publish: `dotnet publish GameLauncher/GameLauncher.csproj -c Release -r win-x64 --self-contained true -o artifacts/GameLauncher-5.2-gesture-candidate`. Anschließend `./scripts/Test-Published.ps1 -Package ./artifacts/GameLauncher-5.2-gesture-candidate`: zwei EXE-Läufe, je 14 Checks, beide Exit 0. Rohbelege gesture-ui.txt, gesture-publish.txt, gesture-published-smoke.json unter docs/verification. Bestehende offene Gates bleiben bestehen.

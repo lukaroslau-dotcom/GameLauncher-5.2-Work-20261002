@@ -1,0 +1,4 @@
+  Wiederherzustellende Projekte werden ermittelt...
+  "C:\Users\shamr\Documents\GameLauncher-5.2-Work-20261002\GameLauncher\GameLauncher.csproj" wiederhergestellt (in 534 ms.).
+  GameLauncher -> C:\Users\shamr\Documents\GameLauncher-5.2-Work-20261002\GameLauncher\bin\Release\net10.0-windows\win-x64\GameLauncher.dll
+  GameLauncher -> C:\Users\shamr\Documents\GameLauncher-5.2-Work-20261002\artifacts\GameLauncher-5.2-gesture-candidate\
